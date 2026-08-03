@@ -8,6 +8,11 @@ mistralai
 # which breaks textstat because ./venv/site-packages sits under the project root.
 nltk<3.10
 openai
+# Not in the course list. Added for projects/research-agent so the arXiv tool
+# can read paper full text instead of just abstracts — the one gap the official
+# reference implementation clearly had on ours. MIT-licensed and pure Python;
+# the official repo also uses pymupdf, which is AGPL and not needed here.
+pdfminer.six
 qrcode
 tavily-python>=0.7.12
 textstat

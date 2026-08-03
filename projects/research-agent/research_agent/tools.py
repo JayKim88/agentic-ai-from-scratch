@@ -7,8 +7,10 @@ descriptions as interface, not commentary.
 """
 
 import inspect
+import io
 import logging
 import os
+import time
 import xml.etree.ElementTree as ElementTree
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -16,11 +18,18 @@ from urllib.parse import urlparse
 import requests
 import wikipedia
 from docstring_parser import parse as parse_docstring
+from pdfminer.high_level import extract_text
 from tavily import TavilyClient
 
 from .config import (
     ARXIV_API_URL,
+    ARXIV_PDF_DELAY_SECONDS,
+    ARXIV_PDF_FETCH_LIMIT,
+    ARXIV_PDF_MAX_CHARS,
+    ARXIV_PDF_MAX_PAGES,
+    ARXIV_PDF_TIMEOUT_SECONDS,
     ARXIV_TIMEOUT_SECONDS,
+    HTTP_USER_AGENT,
     TAVILY_SEARCH_DEPTH,
     WIKIPEDIA_SENTENCES,
     has_tavily_key,
@@ -85,6 +94,54 @@ def build_tool_schema(fn: Callable) -> dict:
     }
 
 
+def _fetch_paper_fulltext(abstract_url: str) -> str:
+    """Download an arXiv paper and extract its opening pages as plain text.
+
+    Returns an empty string on any failure — the caller keeps the abstract in
+    that case, so a paywalled or malformed PDF degrades the result instead of
+    breaking the search.
+    """
+    pdf_url = abstract_url.replace("/abs/", "/pdf/")
+    try:
+        response = requests.get(
+            pdf_url,
+            timeout=ARXIV_PDF_TIMEOUT_SECONDS,
+            headers={"User-Agent": HTTP_USER_AGENT},
+        )
+        response.raise_for_status()
+        text = extract_text(
+            io.BytesIO(response.content), maxpages=ARXIV_PDF_MAX_PAGES
+        )
+    except requests.RequestException as error:
+        logger.warning("Could not download %s: %s", pdf_url, error)
+        return ""
+    except Exception as error:
+        # pdfminer raises a wide range of parse errors on malformed PDFs.
+        logger.warning("Could not extract text from %s: %s", pdf_url, error)
+        return ""
+
+    return " ".join(text.split())[:ARXIV_PDF_MAX_CHARS]
+
+
+def _add_fulltext(papers: list[dict]) -> None:
+    """Upgrade the top papers from abstract to full text, in place.
+
+    Only the first few are fetched: downloading and parsing a PDF costs several
+    seconds, and the model usually only cites the leading results anyway.
+    """
+    for position, paper in enumerate(papers[:ARXIV_PDF_FETCH_LIMIT]):
+        is_after_first = position > 0
+        if is_after_first:
+            time.sleep(ARXIV_PDF_DELAY_SECONDS)
+
+        full_text = _fetch_paper_fulltext(paper["url"])
+        if not full_text:
+            continue
+
+        paper["snippet"] = full_text
+        paper["snippet_source"] = "pdf_fulltext"
+
+
 def domain_of(url: str) -> str:
     """Return the hostname of a URL, or an empty string when unparseable."""
     try:
@@ -144,7 +201,9 @@ def search_arxiv(query: str, max_results: int = 5) -> list[dict]:
     """Search arXiv for peer-reviewed and preprint academic papers.
 
     Best for technical evidence, theoretical frameworks, and recent research.
-    Only covers computer science, mathematics, physics, statistics,
+    For the top results this returns the paper's opening pages, not just the
+    abstract, so specific figures and experimental details are available to
+    cite. Only covers computer science, mathematics, physics, statistics,
     quantitative biology, quantitative finance, electrical engineering, and
     economics. Do not use it for topics outside those fields.
 
@@ -188,12 +247,14 @@ def search_arxiv(query: str, max_results: int = 5) -> list[dict]:
                 "title": " ".join(title.split()),
                 "url": url.strip(),
                 "snippet": " ".join(summary.split()),
+                "snippet_source": "abstract",
                 "authors": authors,
                 "published": published[:10],
                 "source": "arxiv",
             }
         )
 
+    _add_fulltext(results)
     return results
 
 

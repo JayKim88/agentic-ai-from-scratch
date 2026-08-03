@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 import requests
 import textstat
 
-from .config import REPORT_MIN_WORDS
+from .config import HTTP_USER_AGENT, REPORT_MIN_WORDS
 from .workflow import ResearchResult
 
 logger = logging.getLogger(__name__)
@@ -27,17 +27,14 @@ TRAILING_PUNCTUATION = ".,;:!?"
 
 REFERENCES_HEADING_PATTERN = re.compile(r"^#{1,4}\s*references\b", re.IGNORECASE | re.MULTILINE)
 
-MIN_SOURCE_DOMAINS = 3
+MIN_CITED_SOURCES = 3
 MIN_READABILITY_SCORE = 20.0
 
 MAX_LINKS_TO_CHECK = 15
 LINK_CHECK_TIMEOUT_SECONDS = 8
 # Bare HEAD requests get 403'd by a lot of sites — even Wikipedia — so the
 # check would report live pages as broken. Use GET with a browser UA instead.
-LINK_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-)
+#
 # "We were refused" is not "the page is gone". Only the second is a defect in
 # the report, so only the second fails the check.
 BLOCKED_STATUS_CODES = frozenset({401, 403, 405, 429})
@@ -130,13 +127,21 @@ def check_references_section(result: ResearchResult) -> Check:
 
 
 def check_source_diversity(result: ResearchResult) -> Check:
-    domains = {urlparse(url).netloc for url in extract_urls(result.report)}
+    """Count distinct cited works, not distinct hostnames.
+
+    Domain count was the first attempt and it misjudges aggregators: eighteen
+    separate arXiv papers all live on arxiv.org, which scored as "1 domain"
+    and failed a report that was in fact well sourced. Hostname diversity is
+    reported alongside as context rather than as the pass condition.
+    """
+    cited_urls = extract_urls(result.report)
+    domains = {urlparse(url).netloc for url in cited_urls}
     domains.discard("")
     return Check(
         name="소스 다양성",
-        passed=len(domains) >= MIN_SOURCE_DOMAINS,
-        value=f"{len(domains)}개 도메인",
-        detail=f"기준 {MIN_SOURCE_DOMAINS}개 이상",
+        passed=len(cited_urls) >= MIN_CITED_SOURCES,
+        value=f"{len(cited_urls)}개 출처",
+        detail=f"{len(domains)}개 도메인 · 기준 {MIN_CITED_SOURCES}개 출처 이상",
     )
 
 
@@ -202,7 +207,7 @@ def _classify_link(url: str) -> str:
             url,
             timeout=LINK_CHECK_TIMEOUT_SECONDS,
             allow_redirects=True,
-            headers={"User-Agent": LINK_USER_AGENT},
+            headers={"User-Agent": HTTP_USER_AGENT},
             stream=True,  # headers only; we never read the body
         )
         response.close()

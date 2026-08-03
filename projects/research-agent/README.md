@@ -6,8 +6,9 @@ DeepLearning.AI *Agentic AI* 모듈 1의 리서치 에이전트를 프레임워�
 - 작업 현황: [CHECKLIST.md](CHECKLIST.md)
 - 강의 개념 정리: [모듈 1 학습 노트](../../notes/module-1-agentic-workflows/README.md)
 
-> **구현 상태:** 동작합니다. 전체 워크플로우 + 평가 8종 완료, 자체 평가 **8/8 통과**.
-> 남은 것은 공식 저장소와의 대조 회고뿐입니다.
+> **구현 상태:** 완료. 전체 워크플로우 + 평가 8종, 자체 평가 통과.
+> 공식 저장소 대조 회고까지 마쳤습니다 —
+> [자체 구현 vs 공식 저장소](../../notes/retrospectives/research-agent-vs-official.md)
 
 ---
 
@@ -144,7 +145,7 @@ flowchart LR
 |---|---|---|---|
 | `search_web` | Tavily | 필요* | 최신·상업·실용 정보 |
 | `search_wikipedia` | wikipedia | 불필요 | 배경·정의·역사적 맥락 |
-| `search_arxiv` | arXiv Atom API | 불필요 | 기술적 근거 (8개 분야 한정) |
+| `search_arxiv` | arXiv Atom API + PDF | 불필요 | 기술적 근거 (8개 분야 한정). **상위 3건은 초록이 아니라 본문 6페이지·5,000자** |
 
 \* 키가 없으면 자동으로 목록에서 빠지고 나머지 두 개로 축소 동작합니다.
 
@@ -180,13 +181,13 @@ flowchart TD
 
 | 파일 | 줄 | 역할 |
 |---|---|---|
-| `config.py` | 60 | 모델명, 상수, 경로, API 키 검증 |
-| `tools.py` | 254 | docstring → JSON Schema 변환, 검색 도구 3종 |
+| `config.py` | 78 | 모델명, 상수, 경로, API 키 검증 |
+| `tools.py` | 315 | docstring → JSON Schema 변환, 검색 도구 3종 |
 | `llm.py` | 228 | aisuite 래퍼, **도구 호출 루프 직접 구현** |
 | `trace.py` | 112 | 단계별 기록, `collected_urls()` |
 | `agents.py` | 264 | 7개 단계별 프롬프트, `format_sources()` |
 | `workflow.py` | 149 | 파이프라인 조립, 트레이스 연결 |
-| `evals.py` | 260 | 객관적 평가 8종 |
+| `evals.py` | 265 | 객관적 평가 8종 |
 | `run.py` | 96 | CLI |
 
 ---
@@ -228,7 +229,7 @@ flowchart LR
 | **인용 정합성** | 리포트 URL ⊆ 트레이스 `collected_urls()` | 지어낸 URL 0건 |
 | References 섹션 | 정규식 | 존재 |
 | 도구 사용 | 호출 수, 실패 수 | 호출 > 0, 실패 0 |
-| 소스 다양성 | 서로 다른 도메인 수 | 3개 이상 |
+| 소스 다양성 | 인용된 서로 다른 출처 수 | 3개 이상 |
 | 분량 | 단어 수 | 400 이상 |
 | 반성 효과 | `difflib` 초안↔최종 유사도 | 98% 미만 |
 | 가독성 | `textstat` Flesch (References 제외) | 20 이상 |

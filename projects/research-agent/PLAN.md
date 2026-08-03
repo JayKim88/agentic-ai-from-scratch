@@ -48,7 +48,11 @@
 
 - 7단계 워크플로우 (계획 → 조사 → 종합 → 아웃라인 → 초안 → 비평 → 수정)
 - **직접 구현한 도구 호출 루프** (docstring → JSON Schema → tool_call → 실행 → 되먹임)
-- 도구 3종: Tavily 웹 검색, Wikipedia, arXiv
+- 도구 3종: Tavily 웹 검색, Wikipedia, arXiv(**PDF 본문 추출**)
+
+> **범위 변경 (2026-08-03)** — 공식 저장소 대조 후 arXiv PDF 본문 추출을 범위에 넣었다.
+> 초록은 논문의 약 3%뿐이라 모델이 인용할 구체 수치가 없고, 그것이 환각의 원인이 된다.
+> 이를 위해 코스 목록에 없는 `pdfminer.six`를 `requirements.txt`에 추가했다.
 - 단계별 트레이스 기록
 - 객관적 eval 스크립트
 - CLI
@@ -58,7 +62,6 @@
 | 제외 항목 | 이유 |
 |---|---|
 | FastAPI · Postgres · Docker | 공식 저장소엔 있으나 에이전틱 로직과 무관한 인프라. 학습 초점을 흐린다 |
-| PDF 본문 추출 | `pdfminer.six`/`pymupdf`가 코스 requirements에 없음. arXiv 초록으로 충분 |
 | 프레임워크 (LangChain 등) | 강의의 "밑바닥부터 구현" 원칙. [CLAUDE.md](../../CLAUDE.md) 하드 제약 |
 | 멀티 에이전트 협업 | 모듈 5 주제. 여기서 다루면 범위가 흐려진다 |
 
