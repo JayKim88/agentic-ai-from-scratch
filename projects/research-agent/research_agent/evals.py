@@ -25,6 +25,16 @@ logger = logging.getLogger(__name__)
 URL_PATTERN = re.compile(r"https?://[^\s<>\"'\)\]]+")
 TRAILING_PUNCTUATION = ".,;:!?"
 
+# One arXiv paper has several equally valid URLs: /abs/ vs /pdf/, with or
+# without a version suffix. Tavily returns the PDF link while the model cites
+# the abstract page, which is the same source — comparing raw strings reported
+# that as a fabrication. Collapsing them to the bare id keeps the check honest
+# without weakening it: an invented paper id still matches nothing.
+ARXIV_URL_PATTERN = re.compile(
+    r"^arxiv\.org/(?:abs|pdf)/(?P<paper_id>[^?#]+?)(?:v\d+)?(?:\.pdf)?$",
+    re.IGNORECASE,
+)
+
 REFERENCES_HEADING_PATTERN = re.compile(r"^#{1,4}\s*references\b", re.IGNORECASE | re.MULTILINE)
 
 MIN_CITED_SOURCES = 3
@@ -81,8 +91,12 @@ def _normalize_url(url: str) -> str:
     `https://`, so comparing raw strings would report false fabrications.
     """
     cleaned = url.rstrip(TRAILING_PUNCTUATION).rstrip("/")
-    without_scheme = re.sub(r"^https?://", "", cleaned, flags=re.IGNORECASE)
-    return without_scheme.lower()
+    without_scheme = re.sub(r"^https?://", "", cleaned, flags=re.IGNORECASE).lower()
+
+    arxiv_match = ARXIV_URL_PATTERN.match(without_scheme)
+    if arxiv_match:
+        return f"arxiv.org/{arxiv_match.group('paper_id')}"
+    return without_scheme
 
 
 def extract_urls(text: str) -> list[str]:

@@ -142,6 +142,49 @@ def _add_fulltext(papers: list[dict]) -> None:
         paper["snippet_source"] = "pdf_fulltext"
 
 
+def _entry_text(entry: ElementTree.Element, tag: str) -> str:
+    """Read one Atom child element, collapsing the whitespace arXiv pads it with."""
+    raw = entry.findtext(f"atom:{tag}", default="", namespaces=ARXIV_ATOM_NAMESPACE)
+    return " ".join(raw.split())
+
+
+def _paper_from(entry: ElementTree.Element) -> dict:
+    """Convert one Atom entry into the shape every search tool returns."""
+    return {
+        "title": _entry_text(entry, "title"),
+        "url": _entry_text(entry, "id"),
+        "snippet": _entry_text(entry, "summary"),
+        "snippet_source": "abstract",
+        "authors": [
+            _entry_text(author, "name")
+            for author in entry.findall("atom:author", ARXIV_ATOM_NAMESPACE)
+        ],
+        "published": _entry_text(entry, "published")[:10],
+        "source": "arxiv",
+    }
+
+
+def _query_arxiv(search_query: str, max_results: int) -> list[dict] | None:
+    """Run one arXiv API query and parse the Atom feed.
+
+    Returns None when the request or parse failed, an empty list when the query
+    simply matched nothing — the caller needs to tell those two apart.
+    """
+    params = {"search_query": search_query, "start": 0, "max_results": max_results}
+
+    try:
+        response = requests.get(
+            ARXIV_API_URL, params=params, timeout=ARXIV_TIMEOUT_SECONDS
+        )
+        response.raise_for_status()
+        feed = ElementTree.fromstring(response.content)
+    except (requests.RequestException, ElementTree.ParseError) as error:
+        logger.warning("arXiv query failed for %r: %s", search_query, error)
+        return None
+
+    return [_paper_from(entry) for entry in feed.findall("atom:entry", ARXIV_ATOM_NAMESPACE)]
+
+
 def domain_of(url: str) -> str:
     """Return the hostname of a URL, or an empty string when unparseable."""
     try:
@@ -197,7 +240,7 @@ def search_wikipedia(query: str, max_results: int = 3) -> list[dict]:
     return results
 
 
-def search_arxiv(query: str, max_results: int = 5) -> list[dict]:
+def search_arxiv(query: str, max_results: int = 5, category: str = "") -> list[dict]:
     """Search arXiv for peer-reviewed and preprint academic papers.
 
     Best for technical evidence, theoretical frameworks, and recent research.
@@ -210,52 +253,37 @@ def search_arxiv(query: str, max_results: int = 5) -> list[dict]:
     Args:
         query: Search phrase using technical terminology, e.g. "reflection agent LLM".
         max_results: How many papers to return. 3-8 is a reasonable range.
+        category: arXiv category to restrict the search to. Strongly recommended
+            — without it, keyword matches from unrelated fields dominate, so a
+            query about "error correction" in AI returns quantum computing
+            papers. Common values: cs.AI (artificial intelligence), cs.CL
+            (language and NLP), cs.LG (machine learning), cs.SE (software
+            engineering), cs.CV (vision), cs.RO (robotics), stat.ML, math.OC
+            (optimisation), q-bio, q-fin, econ.EM, eess.SY.
     """
-    params = {
-        "search_query": f"all:{query}",
-        "start": 0,
-        "max_results": max_results,
-    }
+    scope = category.strip()
+    search_query = f"all:{query} AND cat:{scope}" if scope else f"all:{query}"
 
-    try:
-        response = requests.get(
-            ARXIV_API_URL, params=params, timeout=ARXIV_TIMEOUT_SECONDS
-        )
-        response.raise_for_status()
-        feed = ElementTree.fromstring(response.content)
-    except (requests.RequestException, ElementTree.ParseError) as error:
-        logger.warning("arXiv search failed for %r: %s", query, error)
-        return [{"error": f"arxiv search failed: {error}"}]
+    papers = _query_arxiv(search_query, max_results)
+    if papers is None:
+        return [{"error": "arxiv search failed"}]
 
-    results: list[dict] = []
-    for entry in feed.findall("atom:entry", ARXIV_ATOM_NAMESPACE):
-        title = entry.findtext("atom:title", default="", namespaces=ARXIV_ATOM_NAMESPACE)
-        summary = entry.findtext(
-            "atom:summary", default="", namespaces=ARXIV_ATOM_NAMESPACE
-        )
-        url = entry.findtext("atom:id", default="", namespaces=ARXIV_ATOM_NAMESPACE)
-        published = entry.findtext(
-            "atom:published", default="", namespaces=ARXIV_ATOM_NAMESPACE
-        )
-        authors = [
-            author.findtext("atom:name", default="", namespaces=ARXIV_ATOM_NAMESPACE)
-            for author in entry.findall("atom:author", ARXIV_ATOM_NAMESPACE)
-        ]
+    # arXiv does not apply this AND strictly: `all:x AND cat:bogus` still
+    # returns tens of thousands of hits, so `cat:` biases the ranking rather
+    # than filtering. Measured effect is still large — scoping a query about
+    # "error correction" to cs.AI drops the quantum-computing papers that
+    # otherwise take the top slots. Quoting the query would make AND strict but
+    # then demands a verbatim phrase match, which returns nothing.
+    #
+    # A genuinely narrow query can still come back empty, and an empty result
+    # reads to the model as "no such research exists", so retry unscoped.
+    found_nothing_while_scoped = not papers and bool(scope)
+    if found_nothing_while_scoped:
+        logger.info("No arXiv results in category %r; retrying unscoped", scope)
+        papers = _query_arxiv(f"all:{query}", max_results) or []
 
-        results.append(
-            {
-                "title": " ".join(title.split()),
-                "url": url.strip(),
-                "snippet": " ".join(summary.split()),
-                "snippet_source": "abstract",
-                "authors": authors,
-                "published": published[:10],
-                "source": "arxiv",
-            }
-        )
-
-    _add_fulltext(results)
-    return results
+    _add_fulltext(papers)
+    return papers
 
 
 def search_web(query: str, max_results: int = 5) -> list[dict]:
