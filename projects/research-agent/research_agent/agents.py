@@ -34,10 +34,20 @@ CITATION_RULES = """Citation rules:
 # Added after the first run scored -3.5 on Flesch reading ease: the model
 # defaults to 40-word sentences stacked with subordinate clauses. Readability
 # is one of the evals, so the constraint belongs in the prompt.
+#
+# Flesch has two inputs: sentence length and syllables per word. The first pass
+# only constrained sentence length, which was enough for a business topic (20.4)
+# but not an academic one (9.2) — feeding paper full text pulls the vocabulary
+# Latinate. The audience line and the word-length rules target the second input.
 PROSE_RULES = """Prose rules:
+- Write for a working engineer who is not a specialist in this field.
 - Keep sentences under 25 words. Break long ones into two.
 - One idea per sentence. Avoid stacking subordinate clauses.
+- Prefer short everyday words: "use" not "utilise", "show" not "demonstrate",
+  "let" not "facilitate", "about" not "approximately".
 - Prefer plain verbs over nominalisations ("we tested" over "testing was performed").
+- Explain each technical term the first time it appears, in one short clause.
+- Do not copy the phrasing of the sources. Say it in your own plainer words.
 - Cut hedging and filler. Every sentence must carry information."""
 
 
@@ -214,6 +224,7 @@ Check specifically for:
 - Sections that restate each other.
 - Vague filler that carries no information.
 - Sentences longer than 25 words, or sentences stacking three or more clauses.
+- Long Latinate words where a short everyday one would do, or unexplained jargon.
 - Missing or malformed References section.
 
 If a section is genuinely fine, do not invent a problem for it.
