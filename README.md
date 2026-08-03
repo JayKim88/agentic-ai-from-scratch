@@ -50,7 +50,10 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 
 | 프로젝트 | 대응 | 상태 |
 |---|---|---|
-| [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | ✅ 동작, 자체 평가 8/8 통과 |
+| [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | ✅ 완료 — 자체 평가 8/8 통과 |
+
+완성 후 공식 저장소와 대조한 회고:
+[자체 구현 vs 공식 저장소](notes/retrospectives/research-agent-vs-official.md)
 
 프레임워크(LangChain / CrewAI) 없이 도구 호출 루프까지 직접 구현했다.
 설계 의도는 [PLAN.md](projects/research-agent/PLAN.md), 실행 흐름 다이어그램은
