@@ -219,10 +219,10 @@ def check_reflection_effect(result: ResearchResult) -> Check:
     """
     similarity = difflib.SequenceMatcher(None, result.draft, result.report).ratio()
     return Check(
-        name="반성 효과",
+        name="리플렉션 효과",
         passed=similarity < MAX_DRAFT_SIMILARITY,
         value=f"초안 대비 {similarity:.1%} 동일",
-        detail=f"{MAX_DRAFT_SIMILARITY:.0%} 이상 동일하면 반성이 무의미",
+        detail=f"{MAX_DRAFT_SIMILARITY:.0%} 이상 동일하면 리플렉션이 무의미",
     )
 
 

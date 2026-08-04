@@ -34,7 +34,7 @@ STEPS: list[tuple[str, str, Callable, tuple[str, ...]]] = [
     ("synthesis", "종합·순위화", agents.synthesize, ("gathered", "sources")),
     ("outline", "아웃라인 작성", agents.write_outline, ("synthesis",)),
     ("draft", "초안 작성", agents.write_draft, ("outline", "synthesis", "sources")),
-    ("critique", "비평 (반성)", agents.critique, ("draft", "sources")),
+    ("critique", "비평 (검토)", agents.critique, ("draft", "sources")),
     ("report", "수정 → 최종 리포트", agents.revise, ("draft", "critique", "sources")),
 ]
 TOTAL_STEPS = len(STEPS)
