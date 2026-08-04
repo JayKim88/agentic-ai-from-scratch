@@ -45,19 +45,23 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 
 ## 직접 구현한 프로젝트
 
-무료 티어에서는 **모든 랩(ungraded 포함)이 Pro 전용**이라 접근할 수 없다.
-따라서 강의 영상의 개념만 가지고 직접 구현하고, 채점은 자체 eval로 대체한다.
+무료 티어에서는 **랩 실행 환경(Pro 전용)에 접근할 수 없다.**
+따라서 직접 구현하고, 채점은 자체 eval로 대체한다.
 
-| 프로젝트 | 대응 | 상태 |
-|---|---|---|
-| [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | ✅ 완료 — 자체 평가 8/8 통과 |
+| 프로젝트 | 대응 | 출발점 | 상태 |
+|---|---|---|---|
+| [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | **강의 영상만** | ✅ 완료 — 자체 평가 8/8 |
+| [chart-agent](projects/chart-agent/README.md) | 모듈 2 "Chart Generation" | **랩 자료 확보** | 🔨 2/7단계 |
 
-완성 후 공식 저장소와 대조한 회고:
-[자체 구현 vs 공식 저장소](notes/retrospectives/research-agent-vs-official.md)
+두 프로젝트의 성격이 다르다. 모듈 1은 랩을 못 봐서 **백지에서 설계**했고,
+모듈 2는 랩 자료(`labs/module-2/`)를 얻어 **명세가 있는 재현**이다.
+
+| 회고 | 내용 |
+|---|---|
+| [자체 구현 vs 공식 저장소](notes/retrospectives/research-agent-vs-official.md) | 모듈 1 — 완성 후 공식 저장소와 대조 |
+| [차트 에이전트 랩 대조](notes/retrospectives/chart-agent-lab-findings.md) | 모듈 2 — 진행 중. 반성이 차트를 퇴행시킨 실물 사례 |
 
 프레임워크(LangChain / CrewAI) 없이 도구 호출 루프까지 직접 구현했다.
-설계 의도는 [PLAN.md](projects/research-agent/PLAN.md), 실행 흐름 다이어그램은
-[프로젝트 README](projects/research-agent/README.md)에 있다.
 
 ---
 
@@ -181,9 +185,10 @@ agentic-ai/
 │   │   └── (동일 구조)
 │   └── retrospectives/     # 자체 구현 vs 공식 구현 비교
 ├── projects/               # 직접 구현한 프로젝트
-│   └── research-agent/     # 모듈 1 리서치 에이전트 (자체 구현)
-└── labs/                   # 강의 자료 원본
-    └── module-2/           # M2_UGL_1.html — Chart Generation 랩
+│   ├── research-agent/     # 모듈 1 리서치 에이전트
+│   └── chart-agent/        # 모듈 2 차트 에이전트
+└── labs/                   # 강의 자료 원본 (수정 금지)
+    └── module-2/           # 노트북 HTML · coffee_sales.csv · 차트 2장
 ```
 
 | 디렉터리 | 역할 |

@@ -9,7 +9,12 @@ DeepLearning.AI [Agentic AI](https://www.deeplearning.ai/courses/agentic-ai) 랩
 
 | 모듈 | 파일 | 내용 |
 |---|---|---|
-| 2 | [module-2/M2_UGL_1.html](module-2/M2_UGL_1.html) | Chart Generation 랩 노트북 HTML 내보내기 (340KB) |
+| 2 | [M2_UGL_1.html](module-2/M2_UGL_1.html) | Chart Generation 랩 노트북 HTML 내보내기 (340KB) |
+| 2 | [coffee_sales.csv](module-2/coffee_sales.csv) | 데이터셋 3,636행 · 2024-03-01 ~ 2025-03-23 |
+| 2 | [chart_v1.png](module-2/chart_v1.png) · [chart_v2.png](module-2/chart_v2.png) | 랩이 실제로 생성한 V1·V2 차트 |
+
+`utils.py`는 아직 받지 않았습니다 — `image_openai_call`/`image_anthropic_call`이
+[chart-agent](../projects/chart-agent/README.md) 3단계의 정답지라 그 단계를 마친 뒤 대조합니다.
 
 ## 원칙
 
@@ -17,12 +22,11 @@ DeepLearning.AI [Agentic AI](https://www.deeplearning.ai/courses/agentic-ai) 랩
    고칠 것이 있으면 `projects/` 아래에 새 파일로 만든다.
 2. 랩을 재현한 코드는 `projects/`에 둔다.
    현재 대응: [projects/chart-agent](../projects/chart-agent/README.md)
-3. 부속 파일(`utils.py`, 데이터 CSV)은 **함께 받아야** 한다.
-   위 HTML은 노트북 본문만 있고 부속 파일이 없어, 재현 시 직접 만들어야 한다.
+3. **부속 파일까지 함께 받는다.** 노트북만 받으면 `utils.py`·데이터·산출물이 빠져
+   재현이 막힌다. 모듈 2에서 실제로 그랬고, CSV를 받기 전까지 데이터셋을 직접 생성했다.
 
 ## 무료 티어에서의 상황
 
-모든 랩(ungraded 포함)이 **Pro 전용**이라 실행 환경에는 접근할 수 없습니다.
-`M2_UGL_1.html`은 노트북을 브라우저에서 내보낸 것이라 **코드와 출력은 읽을 수 있지만
-실행은 불가능**합니다. 그래서 [chart-agent](../projects/chart-agent/PLAN.md)가
-이 HTML을 명세로 삼아 자체 구현합니다.
+랩 **실행 환경**은 Pro 전용이라 접근할 수 없습니다. 코드와 데이터는 파일 브라우저에서
+받을 수 있어, [chart-agent](../projects/chart-agent/PLAN.md)가 이를 명세로 삼아
+자체 구현합니다 — 실행만 우리 환경에서 합니다.

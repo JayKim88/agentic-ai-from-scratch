@@ -59,9 +59,39 @@ flowchart LR
 
 ---
 
-## 랩과 달라지는 점
+## 랩에 없는 것을 왜 더하는가
 
-셋 다 **확장(B)이며 랩 재현(A) 완료 후에 붙입니다.** 위 다이어그램에 넣지 않은 이유입니다.
+**모듈 2가 가르친 것 중 랩이 실습하지 않는 부분이 있습니다.**
+
+| 레슨 | 가르친 것 | 랩 | 우리 |
+|---|---|---|---|
+| [01](../../notes/module-2-reflection/01-reflection-basics.md) | *"외부 정보를 넣을 기회를 찾을 것"* — 실행 결과를 되먹여라 | ❌ | B1 |
+| [02](../../notes/module-2-reflection/02-why-not-direct-generation.md) | 직접 생성 vs 반성 | ✅ | — |
+| [03](../../notes/module-2-reflection/03-chart-generation-workflow.md) | 멀티모달 비평 | ✅ **랩의 본체** | A |
+| [05](../../notes/module-2-reflection/05-evaluating-reflection.md) | *"반성은 공짜가 아니다. 재보고 결정하라"* | ❌ | B2·B3 |
+| [06](../../notes/module-2-reflection/06-using-external-feedback.md) | 정체기 돌파 = 외부 피드백 | ❌ | B1 |
+
+랩만 그대로 따라하면 **03번 레슨만 실습하는 셈**입니다.
+
+특히 아이러니한 지점 — 랩 프롬프트는 `date` 타입 오류를 막으려고
+**"CRITICAL", "NEVER do", "ALWAYS"로 같은 경고를 세 번 반복**합니다.
+01번이 가르친 대로 실행 오류를 되먹였다면 그 경고가 애초에 필요 없습니다.
+
+그리고 B2·B3는 순수한 추가가 아닙니다. 랩 README가 설명하는 **원본 버전에는 있었고**
+(*"Compare: side-by-side comparison"*, *"logs_*.txt"*) 배포본에서 빠졌습니다.
+
+### 그래도 A를 먼저 끝냅니다
+
+B가 정당하다고 해서 먼저 하면 안 됩니다.
+
+| | 판단 기준 |
+|---|---|
+| **A** | 랩이 만들라고 한 것 — 재현했는지가 명확 |
+| **B** | 강의가 가르쳤는데 랩이 안 한 것 — **내 판단이 들어간다** |
+
+섞으면 "랩을 구현한 것"인지 "내 아이디어를 구현한 것"인지 구분이 사라집니다.
+초안에서 실제로 그랬고, 그래서 [규칙 2번](CHECKLIST.md)을 넣었습니다.
+아래 셋을 위 다이어그램에 넣지 않은 이유도 같습니다.
 
 ```mermaid
 flowchart LR
