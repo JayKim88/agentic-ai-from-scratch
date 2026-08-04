@@ -21,16 +21,28 @@ SLUG_FALLBACK = "report"
 
 ProgressCallback = Callable[[int, int, str], None]
 
-STEP_NAMES = [
-    "리서치 계획 수립",
-    "자료 수집",
-    "종합·순위화",
-    "아웃라인 작성",
-    "초안 작성",
-    "비평 (반성)",
-    "수정 → 최종 리포트",
+# Each step names itself and says which earlier outputs it consumes. Keeping
+# that in one table means adding or reordering a step is a single edit, and no
+# step index is written by hand — the previous version repeated the same
+# progress/time/record trio seven times with literal indices.
+#
+# `needs` keys are looked up in a dict of everything produced so far, so a typo
+# fails loudly at the first run rather than silently passing the wrong text.
+STEPS: list[tuple[str, str, Callable, tuple[str, ...]]] = [
+    ("plan", "리서치 계획 수립", agents.plan_research, ()),
+    ("gathered", "자료 수집", agents.gather_sources, ("plan",)),
+    ("synthesis", "종합·순위화", agents.synthesize, ("gathered", "sources")),
+    ("outline", "아웃라인 작성", agents.write_outline, ("synthesis",)),
+    ("draft", "초안 작성", agents.write_draft, ("outline", "synthesis", "sources")),
+    ("critique", "비평 (반성)", agents.critique, ("draft", "sources")),
+    ("report", "수정 → 최종 리포트", agents.revise, ("draft", "critique", "sources")),
 ]
-TOTAL_STEPS = len(STEP_NAMES)
+TOTAL_STEPS = len(STEPS)
+STEP_NAMES = [name for _, name, _, _ in STEPS]
+
+# Produced mid-run rather than by a step, so it is seeded into the same lookup.
+SOURCES_KEY = "sources"
+GATHER_KEY = "gathered"
 
 
 @dataclass
@@ -67,12 +79,18 @@ def run(
 ) -> ResearchResult:
     """Run the full workflow and return the report plus its trace."""
     trace = RunTrace(topic=topic)
+    produced: dict[str, str] = {}
 
-    def record(index: int, step: agents.StepOutput, seconds: float) -> None:
+    for index, (key, name, agent, needs) in enumerate(STEPS, start=1):
+        on_progress(index, TOTAL_STEPS, name)
+
+        arguments = [produced[dependency] for dependency in needs]
+        step, seconds = timed_call(agent, topic, *arguments, model=model)
+
         trace.add_step(
             StepTrace(
                 index=index,
-                name=STEP_NAMES[index - 1],
+                name=name,
                 model=model,
                 prompt=step.prompt,
                 output=step.text,
@@ -81,53 +99,18 @@ def run(
                 hit_turn_limit=step.hit_turn_limit,
             )
         )
+        produced[key] = step.text
 
-    on_progress(1, TOTAL_STEPS, STEP_NAMES[0])
-    plan, seconds = timed_call(agents.plan_research, topic, model=model)
-    record(1, plan, seconds)
-
-    on_progress(2, TOTAL_STEPS, STEP_NAMES[1])
-    gathered, seconds = timed_call(
-        agents.gather_sources, topic, plan.text, model=model
-    )
-    record(2, gathered, seconds)
-    sources = agents.format_sources(gathered.tool_calls)
-
-    on_progress(3, TOTAL_STEPS, STEP_NAMES[2])
-    synthesis, seconds = timed_call(
-        agents.synthesize, topic, gathered.text, sources, model=model
-    )
-    record(3, synthesis, seconds)
-
-    on_progress(4, TOTAL_STEPS, STEP_NAMES[3])
-    outline, seconds = timed_call(
-        agents.write_outline, topic, synthesis.text, model=model
-    )
-    record(4, outline, seconds)
-
-    on_progress(5, TOTAL_STEPS, STEP_NAMES[4])
-    draft, seconds = timed_call(
-        agents.write_draft, topic, outline.text, synthesis.text, sources, model=model
-    )
-    record(5, draft, seconds)
-
-    on_progress(6, TOTAL_STEPS, STEP_NAMES[5])
-    critique, seconds = timed_call(
-        agents.critique, topic, draft.text, sources, model=model
-    )
-    record(6, critique, seconds)
-
-    on_progress(7, TOTAL_STEPS, STEP_NAMES[6])
-    final, seconds = timed_call(
-        agents.revise, topic, draft.text, critique.text, sources, model=model
-    )
-    record(7, final, seconds)
+        # The numbered source list is derived from the gather step's tool calls
+        # rather than its text, so it is not a step of its own.
+        if key == GATHER_KEY:
+            produced[SOURCES_KEY] = agents.format_sources(step.tool_calls)
 
     return ResearchResult(
         topic=topic,
-        report=final.text,
-        draft=draft.text,
-        critique=critique.text,
+        report=produced["report"],
+        draft=produced["draft"],
+        critique=produced["critique"],
         trace=trace,
     )
 
