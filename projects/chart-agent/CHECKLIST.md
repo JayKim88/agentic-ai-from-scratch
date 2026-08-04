@@ -26,7 +26,7 @@
 - [x] `OPENAI_API_KEY` 확인 — 설정됨
 - [x] `ANTHROPIC_API_KEY` 확인 — 설정됨 (검토 모델용)
 - [x] `pandas` 3.0.5 / `matplotlib` 3.11.1 설치 확인
-- [ ] 랩 HTML을 `labs/module-2/`로 이동 (루트에 두지 않는다)
+- [x] 랩 HTML을 [`labs/module-2/`](../../labs/module-2/M2_UGL_1.html)로 이동
 - [ ] `.gitignore`에 `projects/chart-agent/{charts,traces}/` 추가
 
 ## 1. 데이터 계층 [A]
