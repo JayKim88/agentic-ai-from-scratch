@@ -21,12 +21,10 @@ HTTP_USER_AGENT = (
 # Model routing. aisuite resolves the "provider:model" prefix, so swapping a
 # provider later means changing these strings and nothing else.
 DEFAULT_MODEL = "openai:gpt-4.1-mini"
-EDITOR_MODEL = "openai:gpt-4.1-mini"
 
 # The research step is the only one that calls tools; every other step is a
 # single completion, so the loop cap only applies there.
 MAX_TOOL_TURNS = 5
-MAX_TOOL_CALLS_PER_TURN = 4
 
 # Deterministic everywhere except the draft, where a little variety helps.
 TEMPERATURE_ANALYTICAL = 0.0

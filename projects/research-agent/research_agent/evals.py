@@ -186,16 +186,28 @@ def check_readability(result: ResearchResult) -> Check:
 
 
 def check_tool_usage(result: ResearchResult) -> Check:
-    """A run that never called a tool answered from model memory, not research."""
+    """A run that never called a tool answered from model memory, not research.
+
+    Truncation counts as a failure too: if the loop hit its turn cap the model
+    was told to answer with whatever it had, and nothing in the report says so.
+    """
     calls = result.trace.total_tool_calls()
     failed = sum(
         1 for step in result.trace.steps for call in step.tool_calls if call.failed
     )
+    was_truncated = result.trace.was_truncated()
+
+    problems = []
+    if failed:
+        problems.append(f"실패 {failed}회")
+    if was_truncated:
+        problems.append("턴 상한 도달 — 조사가 중단된 채 작성됨")
+
     return Check(
         name="도구 사용",
-        passed=calls > 0 and failed == 0,
+        passed=calls > 0 and failed == 0 and not was_truncated,
         value=f"{calls}회",
-        detail=f"실패 {failed}회" if failed else "",
+        detail=" · ".join(problems),
     )
 
 

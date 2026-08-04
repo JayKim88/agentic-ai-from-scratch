@@ -13,7 +13,6 @@ import os
 import time
 import xml.etree.ElementTree as ElementTree
 from typing import Any, Callable
-from urllib.parse import urlparse
 
 import requests
 import wikipedia
@@ -183,16 +182,6 @@ def _query_arxiv(search_query: str, max_results: int) -> list[dict] | None:
         return None
 
     return [_paper_from(entry) for entry in feed.findall("atom:entry", ARXIV_ATOM_NAMESPACE)]
-
-
-def domain_of(url: str) -> str:
-    """Return the hostname of a URL, or an empty string when unparseable."""
-    try:
-        return urlparse(url).netloc
-    except ValueError:
-        # A malformed URL is not worth aborting a research run over.
-        logger.warning("Could not parse URL for domain: %s", url)
-        return ""
 
 
 def search_wikipedia(query: str, max_results: int = 3) -> list[dict]:

@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 
 from .config import (
     DEFAULT_MODEL,
-    EDITOR_MODEL,
     REPORT_MIN_WORDS,
     TEMPERATURE_ANALYTICAL,
     TEMPERATURE_DRAFTING,
@@ -206,9 +205,12 @@ Sources:
 
 
 def critique(
-    topic: str, draft: str, sources: str, model: str = EDITOR_MODEL
+    topic: str, draft: str, sources: str, model: str = DEFAULT_MODEL
 ) -> StepOutput:
     """Step 6 — reflection. Find the problems; do not fix them yet.
+
+    Pass a stronger model here if critique quality becomes the bottleneck;
+    the step is cheap relative to drafting.
 
     Separating "what is wrong" from "fix it" is the point of the pattern. Asking
     for both at once tends to produce a lightly reworded draft.

@@ -23,6 +23,18 @@ def _preview(text: str) -> str:
     return f"{text[:PREVIEW_CHAR_LIMIT]}... [{len(text)} chars total]"
 
 
+def _step_to_dict(step: "StepTrace") -> dict:
+    """Serialise one step, adding previews beside the full text.
+
+    Built explicitly rather than zipping asdict(self) against self.steps, which
+    silently depended on both keeping the same order.
+    """
+    payload = asdict(step)
+    payload["prompt_preview"] = _preview(step.prompt)
+    payload["output_preview"] = _preview(step.output)
+    return payload
+
+
 @dataclass
 class ToolCallRecord:
     """One tool invocation: what the model asked for and what came back.
@@ -54,6 +66,9 @@ class StepTrace:
     output: str
     duration_seconds: float
     tool_calls: list[ToolCallRecord] = field(default_factory=list)
+    # True when the tool loop was cut off at its turn cap and forced to answer.
+    # Without this the report looks normal even though research was truncated.
+    hit_turn_limit: bool = False
 
 
 @dataclass
@@ -87,20 +102,23 @@ class RunTrace:
     def total_duration_seconds(self) -> float:
         return sum(step.duration_seconds for step in self.steps)
 
+    def was_truncated(self) -> bool:
+        """Whether any step ran out of tool turns before it was finished."""
+        return any(step.hit_turn_limit for step in self.steps)
+
     def to_dict(self) -> dict:
-        payload = asdict(self)
-        # Long prompts and outputs make the file unreadable; keep both a preview
-        # and the full text so the trace stays browsable but lossless.
-        for step, raw in zip(payload["steps"], self.steps):
-            step["prompt_preview"] = _preview(raw.prompt)
-            step["output_preview"] = _preview(raw.output)
-        payload["summary"] = {
-            "steps": len(self.steps),
-            "tool_calls": self.total_tool_calls(),
-            "unique_urls": len(self.collected_urls()),
-            "duration_seconds": round(self.total_duration_seconds(), 1),
+        return {
+            "topic": self.topic,
+            "started_at": self.started_at,
+            "summary": {
+                "steps": len(self.steps),
+                "tool_calls": self.total_tool_calls(),
+                "unique_urls": len(self.collected_urls()),
+                "duration_seconds": round(self.total_duration_seconds(), 1),
+                "truncated": self.was_truncated(),
+            },
+            "steps": [_step_to_dict(step) for step in self.steps],
         }
-        return payload
 
     def save(self, directory: Path, slug: str) -> Path:
         directory.mkdir(parents=True, exist_ok=True)

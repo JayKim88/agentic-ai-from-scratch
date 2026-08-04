@@ -44,7 +44,6 @@ class ResearchResult:
     trace: RunTrace
     report_path: Path | None = None
     trace_path: Path | None = None
-    sources: str = ""
 
     def source_count(self) -> int:
         return len(self.trace.collected_urls())
@@ -79,6 +78,7 @@ def run(
                 output=step.text,
                 duration_seconds=round(seconds, 2),
                 tool_calls=step.tool_calls,
+                hit_turn_limit=step.hit_turn_limit,
             )
         )
 
@@ -129,7 +129,6 @@ def run(
         draft=draft.text,
         critique=critique.text,
         trace=trace,
-        sources=sources,
     )
 
 
