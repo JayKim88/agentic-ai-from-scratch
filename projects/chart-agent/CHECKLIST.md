@@ -8,8 +8,8 @@
 
 | 단계 | 구분 | 상태 |
 |---|---|---|
-| 0. 준비 | — | ⬜ |
-| 1. 데이터 계층 | A | ⬜ |
+| 0. 준비 | — | ✅ 완료 |
+| 1. 데이터 계층 | A | ✅ 완료 (5,615행, 검증 통과) |
 | 2. 실행 계층 | A | ⬜ |
 | 3. LLM 계층 (텍스트 + 이미지) | A | ⬜ |
 | 4. 4단계 워크플로우 | A | ⬜ |
@@ -27,37 +27,76 @@
 - [x] `ANTHROPIC_API_KEY` 확인 — 설정됨 (검토 모델용)
 - [x] `pandas` 3.0.5 / `matplotlib` 3.11.1 설치 확인
 - [x] 랩 HTML을 [`labs/module-2/`](../../labs/module-2/M2_UGL_1.html)로 이동
-- [ ] `.gitignore`에 `projects/chart-agent/{charts,traces}/` 추가
+- [x] `.gitignore`에 `projects/chart-agent/{charts,traces}/` 추가
 
-## 1. 데이터 계층 [A]
+## 1. 데이터 계층 [A] — ✅ 완료
 
-- [ ] `dataset.py` — 시드 고정 생성기
-  - [ ] 스키마 6컬럼: `date, time, cash_type, card, price, coffee_name`
-  - [ ] 파생 3컬럼: `quarter, month, year` (정수) — **랩이 "already computed"라고 프롬프트에 명시**
-  - [ ] `date`는 `datetime64`, `time`은 문자열 HH:MM (분리 유지)
-  - [ ] 음료별 고정 가격 + 소폭 변동 (Espresso 1.812 / Cortado 2.596 / Latte 3.282~3.576)
-  - [ ] **음료 8종** (슬라이드 V2 범례에서 확정): Americano · Americano with Milk ·
-        Cappuccino · Cocoa · Cortado · Espresso · Hot Chocolate · Latte
-  - [ ] **두 해 모두에 8종이 다 있을 것** — 랩 V1 코드가 `inner join`을 쓴다
-  - [ ] ⚠ **`quantity` 컬럼을 만들지 말 것.** 랩 스키마에 없다.
-        **1행 = 거래 1건**이고 판매량은 `price` 합계 또는 행 수로 센다.
-        (랩 산문의 `coffee_type`/`quantity`/`revenue` 언급은 프롬프트와 어긋난 오기)
-  - [ ] 판매량 차이는 **행 수로** 만든다 — 2025 Q1이 2024 Q1보다 많도록
-  - [ ] **기간 2024-01-01 ~ 2025-03-31** — Q1 양쪽이 온전해야 랩의 비교가 성립
-  - [ ] `time`·`cash_type`·`card`도 포함 — 이 지시문엔 안 쓰이지만
-        랩이 9컬럼 전부를 프롬프트에 주입하고, 골라내는 것이 과제의 일부다
-- [ ] `load_and_prepare_data(path)` — 랩 `utils` 함수와 동일한 계약
-- [ ] **pandas 3.0.5 동작 검증** — `.dt.year`, `groupby().sum().reset_index()`, `pd.merge()` ← 첫 관문
-- [ ] `data/coffee_sales.csv` 생성 후 커밋 (재현성)
+- [x] `dataset.py` — 시드 고정 생성기 (`RANDOM_SEED = 20260804`)
+  - [x] 스키마 6컬럼 + 파생 3컬럼 (`dt.quarter`/`dt.month`/`dt.year`)
+  - [x] `date`는 `datetime64[us]`, `time`은 문자열 HH:MM (분리 유지)
+  - [x] **음료 8종** (슬라이드 V2 범례에서 확정)
+  - [x] ⚠ **`quantity` 컬럼 없음.** 1행 = 거래 1건. 근거는 랩의 `df.sample(n=5)`
+        출력 표 (헤더 9개, 각 행 9셀, 생략 표시 없음) — [PLAN §5](PLAN.md)
+  - [x] 판매량 차이는 **행 수로** — Q1 2024 784행 → Q1 2025 1,339행
+  - [x] **기간 2024-01-01 ~ 2025-03-31** — Q1 양쪽 3개월 온전
+  - [x] `time`·`cash_type`·`card`도 포함 (스키마 주입 대상). 현금 행의 `card`는 빈 문자열
+- [x] `load_and_prepare_data(path)` — 랩 `utils` 함수와 동일한 계약
+  - [x] 스키마 불일치 → `ValueError`. 파일 부재 → `FileNotFoundError` + 생성 명령 안내
+- [x] `validate_dataset(df)` — **랩 V1 코드가 의존하는 불변식을 코드로 강제**
+- [x] **pandas 3.0.5 동작 검증** ← 첫 관문 통과
+- [x] `data/coffee_sales.csv` 생성 (5,509행 / 311KB) 후 커밋
+
+### `validate_dataset` — 조용히 깨질 수 있는 것들을 막는다
+
+랩 V1 코드는 두 해를 `coffee_name`으로 **inner join** 한다. 한쪽 분기에 음료가 하나
+빠지면 **에러 없이 차트에서 사라진다.** 시드나 가중치를 건드렸을 때 이게 조용히
+깨지면 안 되므로 불변식을 함수로 박아뒀다.
+
+| 검사 | 실패 시 |
+|---|---|
+| 관측 가격 5개 재현 | 가격표·`PRICE_RISE_DATE` 드리프트 검출 |
+| 두 Q1이 비어 있지 않음 | 비교 자체가 불가능 |
+| 두 Q1이 3개월 온전 | 기간 불균형 비교 |
+| **두 Q1에 8종 전부** | inner join이 조용히 떨어뜨림 |
+| Q1 2025 행 수 > Q1 2024 | 비교에 증가가 안 보임 |
+
+가드 5개 전부 인위적 위반으로 발동 확인했다.
+
+> **관측 가격은 "그 날 그 음료가 팔렸는가"가 아니라 "그 날 그 음료의 가격"으로 검증한다.**
+> 특정 행의 존재는 난수 추첨이라 재현 대상이 아니다. 처음엔 행 존재를 검사해서
+> 지터 모델을 바꾸자마자 오탐이 났다.
+
+### 관측값 재현 — 랩 `df.sample(n=5)` 표
+
+| 음료 | 날짜 | 가격 |
+|---|---|---|
+| Latte | 2024-07-19 | 3.282 |
+| Espresso | 2024-08-07 | 1.812 |
+| Latte | 2024-12-04 | **3.576** |
+| Cortado | 2024-12-05 | 2.596 |
+| Americano | 2025-02-10 | 2.596 |
+
+Latte가 7월 3.282 → 12월 3.576이므로 **그 사이 가격 인상**이 있었다.
+`PRICE_RISE_DATE = 2024-10-01`로 모델링해 5개가 전부 맞아떨어진다.
+
+### pandas 3.0.5 호환 — 랩 V1 코드를 그대로 재생
+
+```python
+q1_2024 = df[(df['year'] == 2024) & (df['quarter'] == 1)]
+sales_2024 = q1_2024.groupby('coffee_name')['price'].sum().reset_index()
+comparison = pd.merge(sales_2024, sales_2025, on='coffee_name', suffixes=('_2024','_2025'))
+```
+
+→ **8행 반환, 누락 없음.** `.dt` 접근자·`groupby().sum().reset_index()`·`pd.merge()`
+전부 정상. [CLAUDE.md](../../CLAUDE.md)가 경고한 pandas 2.x 가정 문제는 나타나지 않았다.
+
+> pandas 3에서 `date` dtype이 `datetime64[us]`다 (2.x는 `[ns]`).
+> 랩 프롬프트는 "datetime64"라고만 하므로 어긋나지 않는다.
 
 **검증 명령**
 ```bash
-./venv/bin/python -c "
-from chart_agent.dataset import load_and_prepare_data
-df = load_and_prepare_data('data/coffee_sales.csv')
-print(df.dtypes)
-print(df.groupby(['year','quarter']).size())
-"
+cd projects/chart-agent
+../../venv/bin/python -m chart_agent.dataset     # 재생성 + 불변식 검사
 ```
 
 ## 2. 실행 계층 [A]
@@ -75,6 +114,22 @@ print(df.groupby(['year','quarter']).size())
 > 랩은 인라인 `exec(code, {"df": df})`를 쓴다. subprocess로 바꾸는 이유는 두 가지다 —
 > 예외가 전체 실행을 죽이지 않게 하고, **stderr를 확보**해 B1의 재료로 삼는다.
 > 동작 결과(차트 생성)는 동일하다.
+
+### 1단계 예행에서 확인된 요구사항 3가지
+
+격리된 cwd의 서브프로세스에서 랩의 V1 코드를 실제로 돌려본 결과다.
+**소요 1.26초, 차트 생성 성공, `KeyError` stderr 캡처, 타임아웃 정상 발동.**
+
+- [ ] **`sys.path`에 프로젝트 루트 주입** — cwd를 격리하면 `chart_agent`가 임포트되지 않는다.
+      자식이 `pd.read_csv`로 직접 읽게 두면 파생 컬럼 로직이 두 군데로 갈라지므로,
+      `load_and_prepare_data`를 그대로 쓴다 (9컬럼 계약의 단일 출처)
+- [ ] **CSV·차트 경로를 절대 경로로** — 랩은 `out_path_v1="chart_v1.png"` 상대 경로를 쓰지만
+      cwd가 격리되면 임시 디렉터리에 떨어진다. 프롬프트가 `{out_path_v1}`을 그대로
+      보간하므로 절대 경로를 넘겨도 랩 계약은 깨지지 않는다
+- [ ] ⚠ **환경변수 `MPLBACKEND=Agg`** — LLM 생성 코드에는 백엔드 지정이 없고 랩 프롬프트도
+      요구하지 않는다. 예행에서 백엔드가 `macosx`로 잡혔다. `plt.show()`를 부르지 않아
+      이번엔 성공했지만 GUI 백엔드 의존은 헤드리스 환경에서 깨진다.
+      **생성 코드를 건드리지 않고 env로 강제**하면 랩 충실도도 유지된다
 
 ## 3. LLM 계층 [A]
 

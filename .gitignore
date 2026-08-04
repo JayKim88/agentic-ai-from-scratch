@@ -12,5 +12,9 @@ projects/research-agent/reports/
 projects/research-agent/traces/
 projects/research-agent/.cache/
 
+# chart-agent 실행 산출물. data/coffee_sales.csv 는 재현성을 위해 커밋한다.
+projects/chart-agent/charts/
+projects/chart-agent/traces/
+
 # macOS
 .DS_Store
