@@ -124,7 +124,10 @@ COMPARISON_QUARTER = 1
 BASELINE_YEAR = 2024
 GROWTH_YEAR = 2025
 COMPARISON_YEARS = (BASELINE_YEAR, GROWTH_YEAR)
-MONTHS_PER_QUARTER = 3
+
+# The lab's own dataset, when it can be found, in preference to a generated one.
+LAB_DATASET_PATH = Path(__file__).resolve().parents[3] / "labs" / "module-2" / "coffee_sales.csv"
+GENERATED_DATASET_PATH = Path(__file__).resolve().parents[1] / "data" / "coffee_sales.csv"
 
 
 # --- helpers ---
@@ -181,7 +184,13 @@ def _validate_price_tables() -> None:
 
 
 def _validate_first_quarters(df: pd.DataFrame) -> None:
-    """Check that the lab's Q1-over-Q1 comparison is answerable from `df`."""
+    """Check that the lab's Q1-over-Q1 comparison is answerable from `df`.
+
+    Deliberately not checked: that both quarters span three months. An earlier
+    version required it, and the lab's own dataset fails that check — it starts
+    on 2024-03-01, so Q1 2024 is March alone. The invariant was a guess about
+    what the data ought to look like, not something the lab's code needs.
+    """
     expected_drinks = set(DRINK_WEIGHTS)
     row_counts = {}
 
@@ -189,13 +198,6 @@ def _validate_first_quarters(df: pd.DataFrame) -> None:
         rows = df[(df["year"] == year) & (df["quarter"] == COMPARISON_QUARTER)]
         if rows.empty:
             raise ValueError(f"Q{COMPARISON_QUARTER} {year} is empty — the lab instruction compares it.")
-
-        months = set(rows["month"].unique())
-        if len(months) != MONTHS_PER_QUARTER:
-            raise ValueError(
-                f"Q{COMPARISON_QUARTER} {year} covers months {sorted(months)}; "
-                f"expected {MONTHS_PER_QUARTER} full months."
-            )
 
         drinks = set(rows["coffee_name"].unique())
         if drinks != expected_drinks:
@@ -245,6 +247,28 @@ def generate_dataset(seed: int = RANDOM_SEED) -> pd.DataFrame:
         day += timedelta(days=1)
 
     return pd.DataFrame(rows, columns=RAW_COLUMNS)
+
+
+def resolve_dataset_path() -> Path:
+    """Return the dataset to work with, preferring the lab's own file.
+
+    The generated dataset was built before the lab's `coffee_sales.csv` turned
+    up. Now that the real one is here it is the better default — it is what the
+    lab's charts were produced from, so outputs are comparable. The generator
+    stays as a fallback for anyone without the course files.
+
+    Raises:
+        FileNotFoundError: neither dataset exists.
+    """
+    if LAB_DATASET_PATH.exists():
+        return LAB_DATASET_PATH
+    if GENERATED_DATASET_PATH.exists():
+        return GENERATED_DATASET_PATH
+
+    raise FileNotFoundError(
+        f"no dataset at {LAB_DATASET_PATH} or {GENERATED_DATASET_PATH} — "
+        f"generate one with `python -m chart_agent.dataset`."
+    )
 
 
 def load_and_prepare_data(path: str | Path) -> pd.DataFrame:
