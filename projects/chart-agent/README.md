@@ -10,7 +10,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩 "Chart Generation" 자체 구
 | 랩 대조 기록 | [회고](../../notes/retrospectives/chart-agent-lab-findings.md) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 2/7단계 완료.** 데이터 계층·실행 계층까지. LLM 계층 진행 예정.
+> **구현 상태: 3/7단계 완료.** 데이터·실행·LLM 계층까지. 다음은 4단계 워크플로우.
 
 ---
 

@@ -10,7 +10,7 @@
 | 0. 준비 | — | ✅ |
 | 1. 데이터 계층 | A | ✅ |
 | 2. 실행 계층 | A | ✅ |
-| 3. LLM 계층 | A | ⬜ |
+| 3. LLM 계층 | A | ✅ |
 | 4. 4단계 워크플로우 | A | ⬜ |
 | 5. 랩 재현 검증 | A | ⬜ |
 | 6. 확장 (B1~B4) | B | ⬜ |
@@ -105,21 +105,57 @@ print(r.returncode, r.stdout.strip())
 "
 ```
 
-## 3. LLM 계층 [A]
+## 3. LLM 계층 [A] ✅
 
-- [ ] `config.py` — 모델명, 상수, 키 검증
-- [ ] `llm.py` — aisuite 텍스트 호출 (`get_response` 대응)
-- [ ] `vision.py` — **provider별 이미지 메시지 구성** ← 학습 핵심
-  - [ ] `encode_image_b64(path)` → `(media_type, b64)`
-  - [ ] OpenAI 블록 (`image_url` + data URI)
-  - [ ] Anthropic 블록 (`source.type = "base64"`)
-  - [ ] 모델명 prefix 라우팅 — 랩은 `"claude" in lower or "anthropic" in lower`
-  - [ ] **양쪽 실호출 검증** — 기본은 OpenAI지만 Anthropic도 한 번 태운다
-- [ ] `codegen.py` — `generate_chart_code()` 대응
-  - [ ] 역할 지정 + 출력 형식 강제
-  - [ ] **스키마 9컬럼 주입** ← 랩의 핵심 기법
-  - [ ] 요구사항 8개
-  - [ ] 스키마 블록을 **공용 상수로** — 랩은 두 프롬프트에 복붙해뒀다
+- [x] `config.py` — 모델 기본값, 키 검증, `provider:model` 라우팅
+- [x] `llm.py` — aisuite 텍스트/이미지 호출 (`get_response` + `image_*_call` 대응)
+- [x] `vision.py` — **provider별 이미지 메시지 구성** ← 학습 핵심
+- [x] `codegen.py` — 스키마 9컬럼 주입 프롬프트
+
+### aisuite가 덮지 않는 것이 둘이었다
+
+이미지 형식은 예상대로였고, **토큰 상한 인자 이름은 예상 밖**이었다.
+
+| | OpenAI | Anthropic |
+|---|---|---|
+| 이미지 블록 | `image_url` + data URI | `source.type = "base64"` |
+| 블록 순서 | 텍스트 → 이미지 | **이미지 → 텍스트** (Anthropic 권장) |
+| 토큰 상한 | 선택. gpt-5는 `max_completion_tokens`, gpt-4.1은 `max_tokens` | **필수** `max_tokens` |
+
+aisuite는 `content`를 양쪽 다 그대로 통과시키므로 **블록만 맞게 만들면 호출은 aisuite로 통일**된다.
+추상화가 덮는 것은 *호출*이지 *메시지 형식*이 아니다.
+
+토큰 상한은 **OpenAI에 아예 보내지 않는다.** 선택 인자인데 모델 계열마다 이름이 달라서,
+보내지 않는 쪽이 계열을 판별하는 것보다 견고하다. Anthropic은 필수라 보낸다.
+
+### 이미지가 실제로 전달되는지 — 완료 기준 3
+
+이미지에만 있는 정보(제목·눈금·색상)를 물어 확인했다. 지시문이나 코드에는 없는 것들이다.
+
+| 모델 | 제목 | 최대 눈금 | 색상 |
+|---|---|---|---|
+| `openai:gpt-5` | Q1 Coffee Sales Comparison: 2024 vs 2025 | 700 | Blue and orange |
+| `openai:gpt-4.1` | 〃 | 700 | Blue and orange |
+| `anthropic:claude-sonnet-5` | 〃 | 600 | Blue and Orange |
+
+입력은 랩의 실제 [`chart_v1.png`](../../labs/module-2/chart_v1.png).
+`log_request=True`로 요청 페이로드도 남는다 — 비평이 다르다는 것만으로는 증명이 안 되기 때문이다.
+
+### V1 생성 → 실행 (랩 step 1~2)
+
+`gpt-4.1-mini` 4.6초 → 22줄 코드 → 실행 1.1초 → 차트 생성 성공.
+프롬프트 1,413자에 스키마 9행·요구사항 8개·`dpi=300` 전부 포함 확인.
+
+**검증**
+```bash
+cd projects/chart-agent
+../../venv/bin/python -c "
+from chart_agent import codegen
+from chart_agent.executor import extract_code
+r = codegen.generate_chart_code('Compare Q1 coffee sales in 2024 and 2025', '/tmp/c.png')
+print(extract_code(r)[:200])
+"
+```
 
 ## 4. 4단계 워크플로우 [A]
 
