@@ -13,10 +13,13 @@ from . import config, llm
 
 # --- constants ---
 
-# The nine columns exactly as `load_and_prepare_data` returns them, copied word
-# for word from the lab — en dashes and all. Shared with the reflection prompt
-# in `reflect.py`, which is the one thing the lab does differently: it pastes
-# the block into both prompts, so the two can drift apart.
+# The nine columns exactly as the lab words them, en dashes and all.
+#
+# Half of each line is not a type but an instruction — "do NOT concatenate with
+# the date column", "already computed, use directly" — written by someone who
+# watched the model get it wrong. df.dtypes cannot produce that, which is why
+# this is a hand-written string and only the column names are machine-checked.
+# `reflect.py` carries its own wording; see `validate_schema_blocks`.
 DATAFRAME_SCHEMA_BLOCK = """\
 - date   (datetime64 — already parsed; use df['date'].dt.year, df['date'].dt.month, etc.)
 - time   (string, HH:MM — do NOT concatenate or combine with the date column)
@@ -81,14 +84,14 @@ def build_generation_prompt(instruction: str, out_path: str) -> str:
     )
 
 
-def generate_chart_code(
-    instruction: str,
-    out_path: str,
-    model: str = config.DEFAULT_GENERATION_MODEL,
-) -> str:
+def generate_chart_code(instruction: str, model: str, out_path_v1: str) -> str:
     """Return the model's raw reply, tags and all.
+
+    Argument order and names follow the lab's. An earlier version put `model`
+    last so it could carry a default; the default now lives in `workflow.py`,
+    where the caller is, rather than bending the signature to hold it.
 
     Extraction stays in `executor.extract_code` so a malformed reply can be
     logged whole — the lab drops it silently.
     """
-    return llm.complete(model, build_generation_prompt(instruction, out_path))
+    return llm.complete(model, build_generation_prompt(instruction, out_path_v1))

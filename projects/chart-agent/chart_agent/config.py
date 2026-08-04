@@ -15,7 +15,14 @@ from dotenv import load_dotenv
 
 # --- constants ---
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = PROJECT_ROOT.parents[1]
+
+# Where a run leaves its output. Both are git-ignored.
+CHARTS_DIR = PROJECT_ROOT / "charts"
+TRACES_DIR = PROJECT_ROOT / "traces"
+
+DEFAULT_IMAGE_BASENAME = "chart"
 
 # Path arithmetic goes stale the moment the package moves, and the symptom would
 # be a missing key rather than a missing directory. `_check_repo_root` turns

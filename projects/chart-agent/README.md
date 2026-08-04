@@ -10,7 +10,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩 "Chart Generation" 자체 구
 | 랩 대조 기록 | [회고](../../notes/retrospectives/chart-agent-lab-findings.md) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 3/7단계 완료.** 데이터·실행·LLM 계층까지. 다음은 4단계 워크플로우.
+> **구현 상태: 4/7단계 완료.** 랩의 4단계 워크플로우가 끝까지 동작합니다. 다음은 5단계 검증.
 
 ---
 
@@ -146,6 +146,24 @@ LLM으로만 가능한 것(차트 유형 적절성, 색상 구분)은 루브릭�
 
 ---
 
+## 모듈 구조
+
+| 파일 | 역할 | 랩 대응 |
+|---|---|---|
+| [`config.py`](chart_agent/config.py) | 모델 기본값 · 키 검증 · provider 라우팅 | — |
+| [`dataset.py`](chart_agent/dataset.py) | CSV 생성 · 로드 · 불변식 검사 | `load_and_prepare_data` |
+| [`vision.py`](chart_agent/vision.py) | **provider별 이미지 메시지** ← 학습 핵심 | `image_openai_call` / `image_anthropic_call` |
+| [`llm.py`](chart_agent/llm.py) | aisuite 텍스트 · 이미지 호출 | `get_response` |
+| [`codegen.py`](chart_agent/codegen.py) | V1 생성 프롬프트 | `generate_chart_code` |
+| [`executor.py`](chart_agent/executor.py) | 태그 추출 + subprocess 실행 | 인라인 `exec` |
+| [`reflect.py`](chart_agent/reflect.py) | 비평 + 수정, 3단 폴백 파싱 | `reflect_on_image_and_regenerate` |
+| [`workflow.py`](chart_agent/workflow.py) | 4단계 조립 | `run_workflow` |
+| [`report.py`](chart_agent/report.py) | 단계별 산출물 표시 · 저장 | `print_html` |
+| [`trace.py`](chart_agent/trace.py) | 단계별 소요 · 모델 기록 | **랩에 없음** |
+| [`run.py`](run.py) | CLI | **랩에 없음** (노트북 셀) |
+
+---
+
 ## 데이터셋
 
 랩의 [`coffee_sales.csv`](../../labs/module-2/coffee_sales.csv)를 씁니다.
@@ -194,7 +212,7 @@ quarter month year        로더가 파생 (already computed)
 
 ---
 
-## 사용법 (예정)
+## 사용법
 
 ```bash
 source venv/bin/activate
@@ -213,9 +231,9 @@ python run.py "..." --from-chart charts/x_v1.png  # 비평부터
 | `--gen-model` | V1 생성 모델 (기본 `openai:gpt-4.1-mini`) |
 | `--reflect-model` | 비평·수정 모델 (기본 `openai:gpt-5`) |
 | `--basename` | 저장 파일명 접두사. **실행마다 바꿔야 덮어쓰지 않음** |
-| `--only` / `--from-chart` | 단계 단독 실행 |
-| `-v` | 생성된 코드와 실행 로그 출력 |
-| `--no-eval` | 채점 생략 (B2·B3) |
+| `--dataset` | CSV 경로 (기본: 랩 파일 → 생성본) |
+| `--only v1` / `--from-chart` | 단계 단독 실행 |
+| `-v` | 생성된 코드와 요청 페이로드 출력 |
 
 검토 모델 기본값은 **랩과 같이 OpenAI**입니다. 랩에서 Claude는 주석 처리된 대안이었습니다.
 
@@ -239,11 +257,44 @@ HTML 렌더링은 버리되 **표시는 남깁니다** — 콘솔 출력 + 파�
 
 ## 실행 결과
 
-> 구현 후 채웁니다.
+강의 지시문 그대로 실행한 것입니다.
 
-- [ ] V1 / V2 차트 이미지
-- [ ] 비평 텍스트 원문
-- [ ] 비평이 V1의 결함을 지적했는지
-- [ ] 객관 체크 결과 (V1 vs V2)
+```
+Step 1  V1 코드 생성    gpt-4.1-mini
+Step 2  V1 실행         charts/lecture_demo_v1.png  (112,846 B)
+Step 3  비평 + 수정     gpt-5, 28.2s, JSON 파싱 정상
+Step 4  V2 실행         charts/lecture_demo_v2.png  (141,434 B)
+```
+
+### V1의 결함 — 축과 범례가 뒤바뀜
+
+x축에는 연도(2024·2025)가 놓였는데 레이블은 `Coffee Name`이고,
+범례 제목은 `Year`인데 정작 음료 8종이 나열됐습니다.
+
+### 비평이 정확히 그것을 지적했습니다
+
+> *"Axes and legend are mismatched: the x-axis shows years but is labeled
+> 'Coffee Name', and the legend title 'Year' actually lists coffee types."*
+
+### V2 — 제자리를 찾음
+
+x축 = 음료명, 범례 = 2024/2025. 매출 내림차순 정렬과 그리드까지 추가됐습니다.
+
+**랩의 실물 V2가 잃어버렸던 연도 비교 차원이 여기서는 유지됩니다.**
+같은 지시문에 같은 워크플로우인데 결과가 갈립니다 —
+[05번 레슨](../../notes/module-2-reflection/05-evaluating-reflection.md)이
+"재보고 결정하라"고 한 이유입니다.
+
+### 단계 단독 실행
+
+`--from-chart`로 랩의 실물 `chart_v1.png`을 비평시키면
+*"coffee names are hard to read due to steep rotation"* 을 짚습니다 —
+[회고 §1](../../notes/retrospectives/chart-agent-lab-findings.md)에 기록한 레이블 잘림입니다.
+
+> V1 코드 없이 이미지만 넘어가므로 비평 입력이 약해집니다. 실행 시 경고가 뜹니다.
+
+### 아직 안 채운 것
+
+- [ ] 객관 체크 결과 (V1 vs V2) — B2
 - [ ] 모델 조합을 바꿨을 때의 차이
 - [ ] B1 오류 되먹임 발동 횟수

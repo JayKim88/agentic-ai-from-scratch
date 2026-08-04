@@ -11,7 +11,7 @@
 | 1. 데이터 계층 | A | ✅ |
 | 2. 실행 계층 | A | ✅ |
 | 3. LLM 계층 | A | ✅ |
-| 4. 4단계 워크플로우 | A | ⬜ |
+| 4. 4단계 워크플로우 | A | ✅ |
 | 5. 랩 재현 검증 | A | ⬜ |
 | 6. 확장 (B1~B4) | B | ⬜ |
 | 7. 회고 | — | ⬜ |
@@ -157,35 +157,66 @@ print(extract_code(r)[:200])
 "
 ```
 
-## 4. 4단계 워크플로우 [A]
+## 4. 4단계 워크플로우 [A] ✅
 
-- [ ] `reflect.py` — `reflect_on_image_and_regenerate()` 대응
-  - [ ] 입력: 이미지 + 지시문 + 모델명 + V2 경로 + **V1 코드**
-  - [ ] 출력: 1행 JSON → 개행 → `<execute_python>` 블록
-  - [ ] **3단 폴백 파싱.** 최종 실패도 기록은 남긴다
-  - [ ] `refined_code` JSON 키는 만들지 않는다 — 랩의 죽은 키
-- [ ] `workflow.py` — `run_workflow()` 대응
-  - [ ] 파라미터 5개, **반환 dict 5키**
-  - [ ] `image_basename` → `{base}_v1.png` / `{base}_v2.png`
-  - [ ] **실행 실패 시 `failure_summary()`를 담아 중단** (재시도는 B1)
-- [ ] `report.py` — `print_html` 대응 ← 빠뜨리기 쉬움
-  - [ ] 데이터 샘플 5행 ← `run_workflow` 첫 줄
-  - [ ] 추출 코드 → V1 경로 → **비평 원문** → V2 코드 → V2 경로
-  - [ ] 산출물 전량 파일 저장
-- [ ] `trace.py` — 단계별 입출력 + 이미지 경로
-- [ ] `run.py` — CLI + **단계 단독 실행**
+- [x] `reflect.py` — `reflect_on_image_and_regenerate()` 대응
+  - [x] 입력: 이미지 + 지시문 + 모델명 + V2 경로 + **V1 코드** (랩 인자 순서 그대로)
+  - [x] 출력: 1행 JSON → 개행 → `<execute_python>` 블록
+  - [x] **3단 폴백 파싱.** 실패 시 `parse_error`에 남기고 원문도 보존
+  - [x] `refined_code` JSON 키는 만들지 않는다 — 랩의 죽은 키
+  - [x] 스키마 블록은 **두 개**. 랩의 두 프롬프트가 문구를 달리 쓰고,
+        프롬프트는 모델이 읽는 입력이라 축자로 둔다.
+        `validate_schema_blocks()`가 **컬럼 이름 누락만** 검사한다 —
+        나머지는 사람이 쓴 지시문이라 `dtypes`로 만들 수 없다
+  - [x] 태그 없으면 `MissingCodeBlockError` (랩은 빈 문자열로 대체)
+- [x] `workflow.py` — `run_workflow()` 대응
+  - [x] 파라미터 5개, **반환 dict 5키**
+  - [x] `image_basename` → `{base}_v1.png` / `{base}_v2.png`
+  - [x] **실행 실패 시 `failure_summary()`를 담아 중단** (재시도는 B1)
+  - [x] `generate_and_execute_v1` / `reflect_and_execute_v2` 분리 → 단계 단독 실행 가능
+- [x] `report.py` — `print_html` 대응
+  - [x] 데이터 샘플 5행 · 추출 코드 · V1 경로 · **비평 원문** · V2 코드 · V2 경로
+  - [x] 산출물 4종 파일 저장 (`v1_code.py` `v2_code.py` `feedback.txt` `reflection_raw.txt`)
+- [x] `trace.py` — 단계별 소요·모델·산출물 경로 JSON
+- [x] `run.py` — CLI + 단계 단독 실행
 
-```bash
-python run.py "Create a plot comparing Q1 coffee sales in 2024 and 2025" \
-  --gen-model openai:gpt-4.1-mini --reflect-model openai:gpt-5 --basename drink_sales -v
+### 실행 결과 — 강의 지시문 그대로
 
-python run.py "..." --only v1                     # 랩 3.1~3.2
-python run.py "..." --from-chart charts/x_v1.png  # 랩 3.3~3.4
-python run.py "..." --reflect-model anthropic:claude-sonnet-5   # provider 라우팅
+```
+Step 1  V1 코드 생성    gpt-4.1-mini
+Step 2  V1 실행         charts/lecture_demo_v1.png  (112,846 B)
+Step 3  비평 + 수정     gpt-5, 28.2s, 파싱 정상
+Step 4  V2 실행         charts/lecture_demo_v2.png  (141,434 B)
 ```
 
-> **A 단계에서 실행이 실패하면 멈춘다.** 차트가 없으면 비평이 성립하지 않는다.
-> 재시도를 넣으면 B1을 A로 끌어오는 것이라 규칙 2번을 어긴다.
+**V1의 결함:** x축은 연도인데 레이블이 `Coffee Name`, 범례 제목은 `Year` 인데 음료가 나열됐다.
+축과 범례가 서로 뒤바뀐 상태.
+
+**비평이 정확히 그것을 지적했다:**
+
+> *"the x-axis shows years but is labeled 'Coffee Name', and the legend title 'Year'
+> actually lists coffee types"*
+
+**V2:** x축 = 음료명, 범례 = 2024/2025, 정렬·그리드 추가. **연도 비교가 유지된다** —
+랩의 실물 V2 가 잃어버렸던 바로 그 차원이다.
+
+### 단계 단독 실행
+
+```bash
+python run.py --only v1 --basename partial              # 랩 3.1~3.2
+python run.py --from-chart <경로> --basename fromlab    # 랩 3.3~3.4
+```
+
+`--from-chart` 로 랩의 실물 `chart_v1.png` 을 비평시키니
+*"coffee names are hard to read due to steep rotation"* 을 짚었다 — 회고에 기록한 레이블 잘림이다.
+
+> V1 코드 없이 이미지만 넘어가므로 비평 입력이 약해진다. 그대로 두되 경고를 띄운다.
+
+**검증**
+```bash
+cd projects/chart-agent
+../../venv/bin/python run.py --basename demo -v
+```
 
 ## 5. 랩 재현 검증 [A] — 여기까지가 랩
 
