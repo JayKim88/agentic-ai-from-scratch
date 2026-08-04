@@ -9,8 +9,8 @@
 | 단계 | 구분 | 상태 |
 |---|---|---|
 | 0. 준비 | — | ✅ 완료 |
-| 1. 데이터 계층 | A | ✅ 완료 (5,615행, 검증 통과) |
-| 2. 실행 계층 | A | ⬜ |
+| 1. 데이터 계층 | A | ✅ 완료 (5,509행, 검증 통과) |
+| 2. 실행 계층 | A | ✅ 완료 (1.1s/실행) |
 | 3. LLM 계층 (텍스트 + 이미지) | A | ⬜ |
 | 4. 4단계 워크플로우 | A | ⬜ |
 | 5. 랩 재현 검증 | A | ⬜ |
@@ -99,37 +99,84 @@ cd projects/chart-agent
 ../../venv/bin/python -m chart_agent.dataset     # 재생성 + 불변식 검사
 ```
 
-## 2. 실행 계층 [A]
+## 2. 실행 계층 [A] — ✅ 완료
 
-- [ ] `executor.py`
-  - [ ] `<execute_python>` 태그 추출 — 랩과 동일한 정규식 `r"<execute_python>([\s\S]*?)</execute_python>"`
-  - [ ] **태그가 없을 때 명시적 실패** — 랩의 `if match:`는 else가 없어 조용히 통과한다
-  - [ ] subprocess 실행, `df` 주입 — 프로세스 경계를 넘길 수 없으므로 **자식이 CSV를 재로드**
-  - [ ] 실행 컨텍스트에 `df` 외에는 아무것도 넣지 않는다 —
-        랩의 `exec_globals = {"df": df}`와 동일. 생성 코드가 import를 스스로 해야 한다
-  - [ ] 타임아웃 30초, 초과 시 kill
-  - [ ] stdout / stderr / 종료코드 반환
-- [ ] 일부러 깨지는 코드로 오류 캡처 검증
+- [x] `executor.py`
+  - [x] `<execute_python>` 태그 추출 — 랩과 동일한 정규식
+  - [x] **태그가 없으면 `MissingCodeBlockError`** — 랩의 `if match:`는 else가 없어 조용히 통과한다
+  - [x] subprocess 실행, **부모의 df를 pickle로 전달**
+  - [x] 실행 컨텍스트에 `df` 외에는 아무것도 없음 — 전역 확인 결과 `['df']`
+  - [x] 타임아웃 30초(기본), 초과 시 종료. 메시지에 실제 초를 반영
+  - [x] stdout / stderr / 종료코드 반환
+- [x] 일부러 깨지는 코드로 오류 캡처 검증
 
-> 랩은 인라인 `exec(code, {"df": df})`를 쓴다. subprocess로 바꾸는 이유는 두 가지다 —
-> 예외가 전체 실행을 죽이지 않게 하고, **stderr를 확보**해 B1의 재료로 삼는다.
-> 동작 결과(차트 생성)는 동일하다.
+### 자식은 프로젝트 코드를 쓰지 않는다
 
-### 1단계 예행에서 확인된 요구사항 3가지
+처음 구현은 자식이 `sys.path`에 프로젝트 루트를 넣고 `load_and_prepare_data`로
+CSV를 **다시 로드**했다. 리뷰에서 세 가지 문제가 드러났다.
 
-격리된 cwd의 서브프로세스에서 랩의 V1 코드를 실제로 돌려본 결과다.
-**소요 1.26초, 차트 생성 성공, `KeyError` stderr 캡처, 타임아웃 정상 발동.**
+| 문제 | 내용 |
+|---|---|
+| 격리해놓고 구멍을 뚫음 | 작업 폴더의 `json.py`가 **stdlib을 가림**(실제 확인) |
+| 경로 손계산 | `Path(__file__).parents[1]` — 패키지를 옮기면 조용히 깨짐 |
+| **df 가정** | 자식이 항상 전체 CSV를 읽어, 걸러낸 df를 넘길 방법이 없음 |
 
-- [ ] **`sys.path`에 프로젝트 루트 주입** — cwd를 격리하면 `chart_agent`가 임포트되지 않는다.
-      자식이 `pd.read_csv`로 직접 읽게 두면 파생 컬럼 로직이 두 군데로 갈라지므로,
-      `load_and_prepare_data`를 그대로 쓴다 (9컬럼 계약의 단일 출처)
-- [ ] **CSV·차트 경로를 절대 경로로** — 랩은 `out_path_v1="chart_v1.png"` 상대 경로를 쓰지만
-      cwd가 격리되면 임시 디렉터리에 떨어진다. 프롬프트가 `{out_path_v1}`을 그대로
-      보간하므로 절대 경로를 넘겨도 랩 계약은 깨지지 않는다
-- [ ] ⚠ **환경변수 `MPLBACKEND=Agg`** — LLM 생성 코드에는 백엔드 지정이 없고 랩 프롬프트도
-      요구하지 않는다. 예행에서 백엔드가 `macosx`로 잡혔다. `plt.show()`를 부르지 않아
-      이번엔 성공했지만 GUI 백엔드 의존은 헤드리스 환경에서 깨진다.
-      **생성 코드를 건드리지 않고 env로 강제**하면 랩 충실도도 유지된다
+**부모의 df를 pickle로 넘기니 셋이 한 번에 사라졌다.** 자식 코드가 이렇게 줄었다.
+
+```python
+import pandas as pd
+df = pd.read_pickle(DF_PATH)
+exec(compile(source, "<generated>", "exec"), {"df": df})
+```
+
+CSV가 아니라 pickle인 이유는 **dtype 보존**이다. CSV 왕복은 `date`를 문자열로
+되돌리고 자식이 파생 컬럼을 다시 만들게 해서, 9컬럼 계약이 두 군데로 갈라진다.
+비용은 쓰기 2ms / 읽기 1ms / 278KB.
+
+`-I`(isolated mode)도 함께 쓴다. 작업 폴더를 모듈 검색 경로에서 빼므로
+실행이 남긴 파일이 표준 라이브러리를 가리지 못한다. venv 패키지는 그대로 살아있다.
+
+> pickle은 신뢰할 수 없는 파일에 쓰지 말라는 형식이지만 여기서는 해당 없다.
+> 파일을 만드는 쪽이 우리 부모 프로세스이고, 자식은 어차피 LLM이 쓴 임의 코드를
+> 실행 중이다. 새로 생기는 노출이 없다.
+
+### 성공 판정은 종료 코드만으로 하지 않는다
+
+`succeeded`는 **종료 코드 0 AND 차트 파일 존재**다.
+
+| 상황 | 종료 코드 | 차트 | 판정 |
+|---|---|---|---|
+| 랩 V1 원본 | 0 | ✅ | 성공 — 1.14초, `backend=Agg` |
+| `KeyError` | 1 | ❌ | 실패 — stderr에 원인 |
+| `savefig` 누락 | **0** | ❌ | **실패** |
+| 다른 경로에 저장 | **0** | ❌ | **실패** |
+| 무한 루프 | -1 | ❌ | 실패 — 타임아웃 |
+
+아래 둘이 종료 코드만 보면 통과해버리는 경우다. 랩 프롬프트가 저장 경로를
+명시(`Save the figure as '{out_path_v1}'`)하는 이상 다른 데 저장한 것은 지시 위반이다.
+
+`failure_summary()`가 이 판정을 한 문장으로 만들어 B1 되먹임에 그대로 넣을 수 있게 한다.
+
+### 확인된 동작
+
+```
+가공된 df 전달   부모에서 Latte 필터 → 자식이 rows 1233, ['Latte'] 수신
+dtype 보존       date=datetime64[us], year=int32
+stdlib 가림 방지  작업 폴더에 json.py 를 둬도 stdlib json 이 임포트됨
+실행 전역        ['df'] — pd 참조 시 NameError
+```
+
+**검증 명령**
+```bash
+cd projects/chart-agent
+../../venv/bin/python -c "
+from chart_agent.dataset import load_and_prepare_data
+from chart_agent.executor import execute_code
+df = load_and_prepare_data('data/coffee_sales.csv')
+r = execute_code(\"print(len(df))\", df, '/tmp/c.png', '/tmp/w')
+print(r.returncode, r.stdout.strip())
+"
+```
 
 ## 3. LLM 계층 [A]
 
@@ -161,6 +208,7 @@ cd projects/chart-agent
   - [ ] 파라미터: `dataset_path`, `user_instructions`, `generation_model`, `reflection_model`, `image_basename`
   - [ ] **반환 dict 5키**: `code_v1`, `chart_v1`, `feedback`, `code_v2`, `chart_v2`
   - [ ] `image_basename`으로 `{base}_v1.png` / `{base}_v2.png` 저장 ← 랩이 명시적으로 강조한 부분
+  - [ ] **실행 실패 시 `failure_summary()`를 담아 중단.** 재시도는 하지 않는다 — B1 소관
 - [ ] `report.py` — **`print_html` 대응** ← 빠뜨리기 쉬운 부분
   - [ ] **데이터 샘플 5행** ← `run_workflow` 첫 줄이 `df.sample(n=5)`를 보여준다
   - [ ] 단계마다 콘솔에 산출물 표시: 추출된 코드 → V1 경로 → **비평 원문** → V2 코드 → V2 경로
@@ -185,9 +233,18 @@ python run.py "..." --from-chart charts/x_v1.png     # 비평부터
 python run.py "..." --reflect-model anthropic:claude-sonnet-5
 ```
 
+### A 단계에서 실행이 실패하면 멈춘다
+
+V1이 실패하면 차트가 없고, 차트가 없으면 비평 단계가 성립하지 않는다
+(멀티모달 입력이 이미지다). 랩도 `exec`에서 그대로 죽는다.
+
+여기서 재시도를 넣으면 B1을 A로 끌어오는 것이고 **규칙 2번을 어긴다.**
+대신 에러 메시지에 `failure_summary()`를 실어 무엇이 잘못됐는지 즉시 보이게 한다
+— B1 없이도 진단은 된다.
+
 ## 5. 랩 재현 검증 [A] — 여기까지가 랩
 
-[PLAN §2](PLAN.md)의 완료 기준 6개와 1:1 대응한다.
+[PLAN §2](PLAN.md)의 완료 기준 8개와 1:1 대응한다.
 
 - [ ] 강의 지시문으로 실행 → V1·V2 두 장 생성
 - [ ] 추출된 코드 육안 확인 — 태그 추출이 정상인지
