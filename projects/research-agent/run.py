@@ -8,7 +8,8 @@ import argparse
 import logging
 import sys
 
-from research_agent.config import DEFAULT_MODEL
+from research_agent import cache
+from research_agent.config import CACHE_DIR, DEFAULT_MODEL
 from research_agent.evals import EvalReport, evaluate
 from research_agent.workflow import ResearchResult, run, save
 
@@ -61,6 +62,12 @@ def main() -> int:
         "-v", "--verbose", action="store_true", help="Log every tool call."
     )
     parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Reuse tool results from a previous run of the same searches. "
+        "Speeds up prompt tuning; do not use when the topic needs current data.",
+    )
+    parser.add_argument(
         "--no-eval", action="store_true", help="Skip the evaluation pass."
     )
     parser.add_argument(
@@ -72,8 +79,14 @@ def main() -> int:
 
     _configure_logging(args.verbose)
 
+    if args.cache:
+        cache.enable(CACHE_DIR)
+
     print(f'주제: "{args.topic}"')
-    print(f"모델: {args.model}\n")
+    print(f"모델: {args.model}")
+    if args.cache:
+        print("캐시: 사용 (도구 결과 재사용)")
+    print()
 
     try:
         result = save(run(args.topic, model=args.model, on_progress=_print_progress))

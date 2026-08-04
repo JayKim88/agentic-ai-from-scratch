@@ -18,6 +18,7 @@ from typing import Any, Callable
 
 import aisuite
 
+from . import cache
 from .config import (
     DEFAULT_MODEL,
     MAX_TOOL_TURNS,
@@ -71,6 +72,9 @@ def _parse_arguments(raw: str | None) -> tuple[dict, str]:
 def _execute_tool(name: str, arguments: dict) -> tuple[Any, bool]:
     """Run one tool. Returns (result, failed).
 
+    Caching sits here rather than inside each tool, so the tools stay pure and
+    all three are covered by one code path.
+
     Failures come back as data rather than exceptions: the model gets to see the
     error message and can recover by calling a different tool.
     """
@@ -79,13 +83,20 @@ def _execute_tool(name: str, arguments: dict) -> tuple[Any, bool]:
         logger.error("Model requested unknown tool %r", name)
         return {"error": f"unknown tool: {name}"}, True
 
+    cached = cache.get(name, arguments)
+    if cached is not None:
+        return cached, False
+
     logger.info("Calling %s(%s)", name, arguments)
     try:
-        return tool(**arguments), False
+        result = tool(**arguments)
     except TypeError as error:
         # Wrong or missing parameters — a schema/model mismatch worth surfacing.
         logger.error("Bad call signature for %s: %s", name, error)
         return {"error": f"invalid arguments for {name}: {error}"}, True
+
+    cache.put(name, arguments, result)
+    return result, False
 
 
 def _sources_in(result: Any) -> list[dict[str, str]]:

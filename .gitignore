@@ -10,6 +10,7 @@ __pycache__/
 # Generated output
 projects/research-agent/reports/
 projects/research-agent/traces/
+projects/research-agent/.cache/
 
 # macOS
 .DS_Store

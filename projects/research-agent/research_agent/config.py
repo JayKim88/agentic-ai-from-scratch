@@ -10,6 +10,7 @@ load_dotenv()
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REPORTS_DIR = PROJECT_ROOT / "reports"
 TRACES_DIR = PROJECT_ROOT / "traces"
+CACHE_DIR = PROJECT_ROOT / ".cache"
 
 # Plenty of hosts — arXiv's PDF mirror and Wikipedia among them — refuse
 # requests that do not look like a browser.
