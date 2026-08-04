@@ -13,6 +13,7 @@
 | 4. 평가 | ✅ 완료 (8/8 통과) |
 | 5. 실행·검증 | ✅ 완료 |
 | 6. 회고 | ✅ 완료 |
+| 7. 자체 리뷰·리팩터링 | ✅ 완료 |
 
 ---
 
@@ -98,6 +99,18 @@ print(search_arxiv('reflection agent LLM', 2))
 - [x] 트레이스 기반 오류 분석 — 데이터 흐름 매트릭스, 2단계 정보 압축·프롬프트 누적 관찰
 - [x] **공식 저장소와 대조** — 1,107줄 전체 검토, 라우팅 결함 재현 확인
 - [x] 대조 회고를 `notes/`에 기록 — [research-agent-vs-official.md](../../notes/retrospectives/research-agent-vs-official.md)
+
+## 7. 자체 리뷰·리팩터링 (2026-08-04)
+
+- [x] `hit_turn_limit` 유실 수정 — 트레이스·요약·평가까지 전달, 절단 시 실패 처리
+- [x] 죽은 코드 제거 — `MAX_TOOL_CALLS_PER_TURN`, `domain_of()`, `ResearchResult.sources`
+- [x] `EDITOR_MODEL` 제거 — `DEFAULT_MODEL`과 같은 값이라 오해만 유발
+- [x] `to_dict()`의 `zip` 결합 제거 — 순서 의존 제거
+- [x] `workflow.run()` 단계 테이블화 — 손으로 쓴 인덱스 7개 제거 (149 → 131줄)
+- [x] 도구 결과 캐시 추가 (`--cache`) — PLAN에 적어두고 미구현이던 항목
+- [x] 문서 동기화 — 줄 수 열 제거(갱신마다 낡음), `cache.py` 반영, 평가 정의 갱신
+
+**유지 판단:** `check_*`의 통일된 시그니처, PDF 순차 다운로드(arXiv 요청 간격), 프롬프트 누적.
 
 ---
 

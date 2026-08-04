@@ -62,6 +62,9 @@ flowchart TD
 
 강의 분류로 **반자율적(semi-autonomous)**. 단계 순서까지 모델이 정하는 형태는 모듈 5의 주제라 제외했습니다.
 
+7단계는 [`workflow.py`의 `STEPS` 테이블](research_agent/workflow.py)에 이름·함수·의존성으로 선언돼 있습니다.
+각 단계가 어떤 앞선 출력을 받는지가 한눈에 보이고, 단계 인덱스를 손으로 세지 않습니다.
+
 ---
 
 ## 도구 호출 루프 (2단계 내부)
@@ -161,6 +164,7 @@ flowchart TD
     EV["evals.py — 객관적 평가"]:::done
 
     LLM["llm.py — 도구 호출 루프"]:::done
+    CA["cache.py — 도구 결과 캐시"]:::done
     TR["trace.py — 실행 기록"]:::done
     TL["tools.py — 도구 + 스키마 생성"]:::done
     CF["config.py — 모델·상수·키 검증"]:::done
@@ -171,6 +175,7 @@ flowchart TD
     WF --> EV
     AG --> LLM
     LLM --> TL
+    LLM --> CA
     LLM --> TR
     EV --> TR
     TL --> CF
@@ -179,16 +184,17 @@ flowchart TD
     classDef done fill:#d3f2d3,stroke:#4a9a4a,color:#000
 ```
 
-| 파일 | 줄 | 역할 |
-|---|---|---|
-| `config.py` | 78 | 모델명, 상수, 경로, API 키 검증 |
-| `tools.py` | 315 | docstring → JSON Schema 변환, 검색 도구 3종 |
-| `llm.py` | 228 | aisuite 래퍼, **도구 호출 루프 직접 구현** |
-| `trace.py` | 112 | 단계별 기록, `collected_urls()` |
-| `agents.py` | 264 | 7개 단계별 프롬프트, `format_sources()` |
-| `workflow.py` | 149 | 파이프라인 조립, 트레이스 연결 |
-| `evals.py` | 265 | 객관적 평가 8종 |
-| `run.py` | 96 | CLI |
+| 파일 | 역할 |
+|---|---|
+| `config.py` | 모델명, 상수, 경로, API 키 검증 |
+| `tools.py` | docstring → JSON Schema 변환, 검색 도구 3종 |
+| `llm.py` | aisuite 래퍼, **도구 호출 루프 직접 구현** |
+| `cache.py` | 도구 결과 디스크 캐시 (기본 꺼짐) |
+| `trace.py` | 단계별 기록, `collected_urls()`, 절단 감지 |
+| `agents.py` | 7개 단계별 프롬프트, `format_sources()` |
+| `workflow.py` | 단계 테이블 기반 파이프라인 |
+| `evals.py` | 객관적 평가 8종 |
+| `run.py` | CLI |
 
 ---
 
@@ -228,7 +234,7 @@ flowchart LR
 |---|---|---|
 | **인용 정합성** | 리포트 URL ⊆ 트레이스 `collected_urls()` | 지어낸 URL 0건 |
 | References 섹션 | 정규식 | 존재 |
-| 도구 사용 | 호출 수, 실패 수 | 호출 > 0, 실패 0 |
+| 도구 사용 | 호출 수, 실패 수, **턴 상한 도달 여부** | 호출 > 0, 실패 0, 절단 없음 |
 | 소스 다양성 | 인용된 서로 다른 출처 수 | 3개 이상 |
 | 분량 | 단어 수 | 400 이상 |
 | 반성 효과 | `difflib` 초안↔최종 유사도 | 98% 미만 |
