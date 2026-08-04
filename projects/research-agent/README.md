@@ -51,7 +51,7 @@ flowchart TD
 ```
 
 5~7단계가 [작업 분해 노트](../../notes/module-1-agentic-workflows/05-task-decomposition.md)에서
-"에세이 작성"을 세 개로 쪼갠 그 부분이며, 동시에 **반성(Reflection) 패턴**입니다.
+"에세이 작성"을 세 개로 쪼갠 그 부분이며, 동시에 **리플렉션(Reflection) 패턴**입니다.
 
 ### 자율성 경계
 
@@ -237,7 +237,7 @@ flowchart LR
 | 도구 사용 | 호출 수, 실패 수, **턴 상한 도달 여부** | 호출 > 0, 실패 0, 절단 없음 |
 | 소스 다양성 | 인용된 서로 다른 출처 수 | 3개 이상 |
 | 분량 | 단어 수 | 400 이상 |
-| 반성 효과 | `difflib` 초안↔최종 유사도 | 98% 미만 |
+| 리플렉션 효과 | `difflib` 초안↔최종 유사도 | 98% 미만 |
 | 가독성 | `textstat` Flesch (References 제외) | 20 이상 |
 | 링크 유효성 | GET + 브라우저 UA | **끊김(404/410) 0건** |
 
@@ -290,7 +290,7 @@ python run.py "How do I build a new rocket company to compete with SpaceX?"
 [3/7] 종합·순위화 ...
 [4/7] 아웃라인 작성 ...
 [5/7] 초안 작성 ...
-[6/7] 비평 (반성) ...
+[6/7] 비평 (검토) ...
 [7/7] 수정 → 최종 리포트 ...
 
 리포트    reports/20260803-170727-how-do-i-build-a-new-rocket-company-to-c.md
@@ -307,7 +307,7 @@ python run.py "How do I build a new rocket company to compete with SpaceX?"
   [PASS] 도구 사용          6회
   [PASS] 소스 다양성        20개 도메인          기준 3개 이상
   [PASS] 분량              1096 단어           기준 400 이상
-  [PASS] 반성 효과          초안 대비 81.4% 동일   98% 이상 동일하면 반성이 무의미
+  [PASS] 리플렉션 효과          초안 대비 81.4% 동일   98% 이상 동일하면 리플렉션이 무의미
   [PASS] 가독성 (Flesch)    20.4               기준 20.0 이상
   [PASS] 링크 유효성        14/15 정상          차단 1 · 끊김 0 · 응답없음 0
 ```

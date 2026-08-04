@@ -66,7 +66,7 @@ print(search_arxiv('reflection agent LLM', 2))
   - [x] `synthesize()` — 종합·순위화·중복 제거
   - [x] `write_outline()`
   - [x] `write_draft()`
-  - [x] `critique()` — 반성: 무엇을 고쳐야 하는가
+  - [x] `critique()` — 검토: 무엇을 고쳐야 하는가
   - [x] `revise()` — 최종 마크다운 리포트
 - [x] `workflow.py` — 7단계 파이프라인 조립 + 트레이스 연결
 - [x] `run.py` — CLI (`python run.py "주제" [--model] [--out]`)
@@ -87,7 +87,7 @@ print(search_arxiv('reflection agent LLM', 2))
 ## 5. 실행·검증
 
 - [x] 전체 실행 2회 (강의 데모 주제, 각 약 2분)
-- [x] **초안 vs 최종본 diff** — 18.6% 변경. 반성이 실제로 일함 (eval로 자동 판정)
+- [x] **초안 vs 최종본 diff** — 18.6% 변경. 검토가 실제로 일함 (eval로 자동 판정)
 - [x] eval 실행 → **8/8 통과**. 1차 6/8 → 원인 분리 후 수정 → 8/8
 - [x] 트레이스 육안 검토 — 데이터 흐름 매트릭스로 확인. 모든 단계가 앞 단계 출력을 100% 수신
 - [x] 완료 기준 5개 충족 확인 — 전부 충족 ([PLAN.md §2](PLAN.md)에 결과 기록)

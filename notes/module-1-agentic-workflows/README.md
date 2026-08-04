@@ -13,7 +13,7 @@ DeepLearning.AI [Agentic AI](https://www.deeplearning.ai/courses/agentic-ai) 모
 | 04 | [활용 사례](04-applications.md) | 송장 처리 → 컴퓨터 사용까지 난이도 4단계 |
 | 05 | [작업 분해](05-task-decomposition.md) | **이 모듈의 중심.** 분해 방법론과 빌딩 블록 |
 | 06 | [평가 (evals)](06-evals.md) | 만든 뒤 발견하기, 객관적/주관적 eval, 오류 분석 |
-| 07 | [에이전틱 디자인 패턴](07-design-patterns.md) | 반성·도구 사용·계획·멀티 에이전트 |
+| 07 | [에이전틱 디자인 패턴](07-design-patterns.md) | 리플렉션·도구 사용·계획·멀티 에이전트 |
 
 ## 모듈 1을 한 장으로
 
@@ -37,14 +37,14 @@ GPT-3.5를 에이전틱 워크플로우로 감싸면 GPT-4의 비에이전틱 �
 발견한 문제에 맞는 eval을 만들고, 트레이스로 오류 분석을 한다.
 
 **6. 조합 도구 4가지**
-반성(Reflection) · 도구 사용(Tool Use) · 계획(Planning) · 멀티 에이전트(Multi-Agent)
+리플렉션(Reflection) · 도구 사용(Tool Use) · 계획(Planning) · 멀티 에이전트(Multi-Agent)
 
 ## 강좌 전체에서 모듈 1의 위치
 
 | 모듈 | 주제 | 모듈 1과의 연결 |
 |---|---|---|
 | **1** | **에이전틱 워크플로우 입문** | — |
-| 2 | Reflection | 07의 패턴 1, 05의 4~5단계를 심화 |
+| 2 | [Reflection](../module-2-reflection/README.md) | 07의 패턴 1, 05의 4~5단계를 심화 |
 | 3 | Tool Use + MCP | 07의 패턴 2 |
 | 4 | 평가·에러 분석·최적화 | **06을 본격적으로 확장** |
 | 5 | Planning & Multi-Agent | 07의 패턴 3, 4 |
