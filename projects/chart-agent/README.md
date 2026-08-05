@@ -10,7 +10,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩 "Chart Generation" 자체 구
 | 랩 대조 기록 | [회고](../../notes/retrospectives/chart-agent-lab-findings.md) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 5/7단계 완료.** 랩 재현(A)이 끝났습니다. 다음은 확장(B).
+> **구현 상태: 6/7단계.** 랩 재현(A)과 정답지 대조가 끝났습니다. 남은 것은 확장(B).
 
 ---
 
@@ -203,13 +203,20 @@ quarter month year        로더가 파생 (already computed)
 | OpenAI | dict를 **그대로 통과** → OpenAI 형식 블록 동작 |
 | Anthropic | `content`를 **그대로 통과**. `image_url`을 `source.base64`로 **변환하지 않음** |
 
-즉 **aisuite는 이미지에 관해 아무 일도 하지 않습니다.**
-랩이 `image_openai_call`과 `image_anthropic_call`을 따로 둔 이유입니다.
+즉 **aisuite는 이미지 요청에 관해 아무 일도 하지 않습니다.**
+
+응답 쪽에도 구멍이 있습니다 — `response.content[0].text` 만 읽어 **Anthropic이 텍스트를
+여러 블록으로 나눠 보내면 뒤를 잃습니다.** 그래서 Anthropic 이미지 호출만 SDK를 직접 씁니다.
 
 ```
-텍스트 호출  →  aisuite            (모델 교체 자유)
-이미지 호출  →  provider 직접 라우팅 (형식이 다름)
+텍스트 호출           →  aisuite              (모델 교체 자유)
+OpenAI 이미지 호출    →  aisuite + 우리가 만든 블록
+Anthropic 이미지 호출 →  SDK 직접             (블록을 전부 이어붙이려고)
 ```
+
+> 랩의 `utils.py`는 **처음부터 aisuite를 안 씁니다.** 텍스트도 이미지도 provider SDK
+> 직접 호출이고 라우팅도 손으로 합니다. 여러 블록을 이어붙이는 처리도 거기 있습니다 —
+> [회고 §8](../../notes/retrospectives/chart-agent-lab-findings.md)에서 대조했습니다.
 
 ---
 

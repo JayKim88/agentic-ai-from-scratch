@@ -10,6 +10,7 @@ client.
 from __future__ import annotations
 
 import aisuite
+import anthropic
 
 from . import config, vision
 
@@ -56,6 +57,41 @@ def _content_of(response) -> str:
     return content
 
 
+def _joined_text(blocks) -> str:
+    """Concatenate every text block Anthropic returned.
+
+    aisuite reads `response.content[0].text` and stops, so a reply split across
+    blocks loses everything after the first, and a reply whose first block is
+    not text raises on the attribute. The lab's `image_anthropic_call` collects
+    them all; this is the one place its version was doing something ours was
+    not.
+    """
+    parts = [block.text for block in (blocks or []) if getattr(block, "type", None) == "text"]
+    return "".join(parts).strip()
+
+
+def _anthropic_image_call(model: str, message: dict) -> str:
+    """Call Anthropic directly so no text block is dropped.
+
+    aisuite carries the request fine — its converter passes `content` through —
+    but its response conversion keeps only the first block. Going through the
+    SDK here is not a rejection of the abstraction; it is the one response shape
+    the abstraction flattens.
+    """
+    config.load_environment()
+    client = anthropic.Anthropic()
+    reply = client.messages.create(
+        model=model.split(config.PROVIDER_SEPARATOR, 1)[-1],
+        max_tokens=config.MAX_RESPONSE_TOKENS,
+        messages=[message],
+    )
+
+    text = _joined_text(reply.content)
+    if not text:
+        raise RuntimeError("model returned no text blocks")
+    return text
+
+
 # --- main export ---
 
 
@@ -88,6 +124,9 @@ def complete_with_image(
 
     if log_request:
         print(f"[vision] {model} ← {summary}")
+
+    if config.is_anthropic(model):
+        return _anthropic_image_call(model, message), summary
 
     response = _get_client().chat.completions.create(
         model=model,

@@ -229,12 +229,163 @@ q1_2024 = df[(df['year'] == 2024) & …]     # TypeError: 'NoneType' …
 두 번째가 코드 구현까지 파고든다. **한 번 돌려보고 판단하면 안 된다**는
 [05번 레슨](../module-2-reflection/05-evaluating-reflection.md)의 근거다.
 
-## 8. 아직 열지 않은 것
+## 8. `utils.py` 대조 — 정답지를 열고
 
-`utils.py`에 `image_openai_call` / `image_anthropic_call`이 들어 있다.
-3단계 `vision.py`가 정확히 그 함수다.
+랩 재현(A)이 끝난 뒤 열었다. 모듈 1에서 공식 저장소를 완성 전에 열지 않았던 것과 같은 규칙이다.
 
-모듈 1의 규칙을 그대로 적용했다 —
-**[공식 저장소를 완성 전엔 열지 않는다](research-agent-vs-official.md).**
+### ⚠ 랩은 aisuite 를 아예 쓰지 않는다
 
-랩 재현(A)이 끝났으므로 이제 열어서 대조할 차례다. 결과는 여기 추가한다.
+가장 크게 빗나간 추론이다. `utils.py` 에 `import aisuite` 가 없다.
+
+```python
+openai_client = OpenAI(...)
+anthropic_client = Anthropic(...)
+
+def get_response(model, prompt):
+    if "claude" in model.lower() or "anthropic" in model.lower():
+        return anthropic_client.messages.create(...)
+    return openai_client.responses.create(...)
+```
+
+**텍스트도 이미지도 provider SDK 직접 호출**이고, 라우팅도 손으로 한다.
+
+우리는 *"텍스트는 aisuite, 이미지는 provider 라우팅"* 으로 나눴다. aisuite 가 이미지를
+정규화하지 않는다는 관찰은 맞았고 실호출로 검증했지만, **"랩도 같은 결론에 도달했다"**
+는 서술은 틀렸다. 랩은 애초에 그 추상화를 쓰지 않았다.
+
+### OpenAI 는 Responses API 를 쓴다
+
+```python
+# 랩
+openai_client.responses.create(
+    input=[{"role": "user", "content": [
+        {"type": "input_text",  "text": prompt},
+        {"type": "input_image", "image_url": data_url},     # 문자열 하나
+    ]}],
+)
+
+# 우리 (aisuite → Chat Completions)
+{"type": "text",      "text": prompt},
+{"type": "image_url", "image_url": {"url": data_url}},      # dict
+```
+
+**블록 타입 이름도 이미지 필드 모양도 다르다.** 둘 다 동작하지만 다른 API 다.
+"OpenAI 이미지 형식" 이 하나가 아니라는 뜻이기도 하다.
+
+### 블록 순서는 우연히 맞췄다
+
+랩도 **텍스트 → 이미지** 다. 초안에서 Anthropic 만 이미지를 앞에 뒀다가
+*"provider 비교에서 형식 외의 변수가 된다"* 는 이유로 통일했는데, 그 수정이
+랩의 실제 순서와 같아졌다. 근거는 달랐지만 결과는 맞았다.
+
+### 우리가 놓친 것 — 여러 텍스트 블록
+
+```python
+# 랩: 모든 텍스트 블록을 이어붙인다
+parts = [b.text for b in (msg.content or []) if getattr(b, "type", None) == "text"]
+return "".join(parts).strip()
+```
+
+```python
+# aisuite: 첫 블록만 읽는다
+return Message(content=response.content[0].text, ...)
+```
+
+Anthropic 이 텍스트 블록을 여러 개로 나눠 보내면 **우리는 뒤를 잃는다.**
+첫 블록이 텍스트가 아니면(thinking 블록 등) `content[0].text` 자체가 깨진다.
+
+지금까지 문제가 없었던 것은 claude-sonnet-5 가 한 블록으로 답했기 때문이다.
+**잠재 결함이고, 랩은 방어하고 있다.**
+
+### 랩의 Anthropic 시스템 프롬프트는 자기 사용자 프롬프트와 충돌한다
+
+```python
+system=("You are a careful assistant. Respond with a single valid JSON object only. "
+        "Do not include markdown, code fences, or commentary outside JSON.")
+```
+
+**"JSON 객체 하나만, JSON 밖에는 아무것도"** — 그런데 같은 호출의 사용자 프롬프트는
+JSON 한 줄 **다음에** `<execute_python>` 블록을 요구한다. 지시가 정면으로 부딪힌다.
+
+우리는 시스템 프롬프트를 두지 않았다. 결과적으로 Claude 가 코드 블록을 정상적으로
+돌려줬다 — 이 경우엔 없는 쪽이 나았다.
+
+### `ensure_execute_python_tags` 는 오적용돼 있다
+
+```python
+def ensure_execute_python_tags(text):
+    text = re.sub(r"^```(?:python)?\s*|\s*```$", "", text).strip()   # 마크다운 펜스 제거
+    if "<execute_python>" not in text:
+        text = f"<execute_python>\n{text}\n</execute_python>"          # 없으면 감싸기
+    return text
+```
+
+**태그를 빼먹은 응답을 복구하려는 함수**다. 그런데 호출부가 이렇다.
+
+```python
+m_code = re.search(r"<execute_python>([\s\S]*?)</execute_python>", content)
+refined_code_body = m_code.group(1).strip() if m_code else ""      # ← 실패하면 빈 문자열
+refined_code = utils.ensure_execute_python_tags(refined_code_body) # ← 빈 문자열을 감쌈
+```
+
+정규식이 이미 실패한 뒤에 부르므로 **빈 코드가 태그에 감싸여 나온다.** 그리고 4단계에서
+그 빈 코드를 실행해 차트 없이 조용히 끝난다.
+
+우리는 `MissingCodeBlockError` 를 던진다. 랩의 복구 의도는 좋았으나 **연결이 어긋나 있어
+작동하지 않는다.** 이 판단은 우리 쪽이 맞았다.
+
+### `make_schema_text` — 만들어두고 쓰지 않는다
+
+```python
+def make_schema_text(df):
+    return "\n".join(f"- {c}: {dt}" for c, dt in df.dtypes.items())
+```
+
+**dtypes 로 스키마를 생성하는 함수가 존재하는데, 두 프롬프트 모두 손으로 쓴 블록을 쓴다.**
+
+"스키마를 자동 생성할까 손으로 쓸까" 를 논의하며 *"괄호 안의 절반이 타입이 아니라 명령이라
+dtypes 로는 만들 수 없다"* 고 결론지었는데, **랩도 둘 다 만들어보고 손으로 쓴 쪽을 골랐다.**
+
+### `load_and_prepare_data` 는 검증하지 않는다
+
+```python
+df = pd.read_csv(csv_path)
+if "date" in df.columns:                          # 없으면 파생 컬럼도 없이 반환
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")   # 깨진 날짜는 NaT
+    ...
+return df
+```
+
+프롬프트는 9컬럼을 약속하는데 **로더는 그것을 보장하지 않는다.** 우리는
+`SCHEMA_COLUMNS` 불일치 시 `ValueError` 를 던진다.
+
+### 랩의 Anthropic 경로는 DLAI 밖에서 동작하지 않는다
+
+```python
+anthropic_client = Anthropic(api_key=anthropic_api_key) if anthropic_api_key else Anthropic()
+anthropic_client = Anthropic(base_url="http://jupyter-api-proxy.internal.dlai/rev-proxy/anthropic")
+```
+
+**두 번째 줄이 첫 줄을 덮어쓰면서 api_key 도 함께 버린다.** DLAI 내부 프록시를 가리키므로
+로컬에서 Claude 를 쓰려면 이 파일을 고쳐야 한다.
+
+우리가 처음부터 로컬 키로 양쪽 provider 를 태워본 것이 결과적으로 맞았다.
+
+### 정리
+
+| 항목 | 우리 | 랩 | 판단 |
+|---|---|---|---|
+| 추상화 | 텍스트만 aisuite | provider SDK 직접 | 랩이 단순. 우리는 모듈 교체 이점 |
+| OpenAI 이미지 | Chat Completions | Responses API | 둘 다 동작 |
+| 블록 순서 | 텍스트 → 이미지 | 동일 | 일치 |
+| 여러 텍스트 블록 | ❌ 첫 것만 | ✅ 전부 이어붙임 | **랩이 옳다** |
+| Anthropic system | 없음 | 있으나 사용자 프롬프트와 충돌 | 우리가 낫다 |
+| 태그 없는 응답 | 예외 | 복구 시도하나 오적용 | 우리가 낫다 |
+| 스키마 | 손으로 쓴 블록 | 동일 (생성기는 미사용) | 일치 |
+| 로더 검증 | `ValueError` | 없음 | 우리가 낫다 |
+
+**고쳐야 할 것은 하나다** — 여러 텍스트 블록 처리. 나머지는 설계 차이거나 우리 쪽이 낫다.
+
+## 9. 아직 열지 않은 것
+
+없다. `utils.py` 까지 대조를 마쳤다.
