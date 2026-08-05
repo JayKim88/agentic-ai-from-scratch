@@ -72,26 +72,26 @@ def complete(model: str, prompt: str) -> str:
 
 
 def complete_with_image(
-    model: str,
-    prompt: str,
-    image_path: str,
-    log_request: bool = False,
-) -> str:
-    """Send a prompt together with an image.
+    model: str, prompt: str, image_path: str, log_request: bool = False
+) -> tuple[str, str]:
+    """Send a prompt together with an image. Returns `(content, request_summary)`.
 
-    `log_request` prints what the request actually carried — the evidence
-    completion criterion 3 asks for, since a differing critique proves nothing
-    on its own.
+    The summary describes the message that actually went out. Completion
+    criterion 3 asks for evidence that an image was really sent, and a critique
+    that happens to mention the chart is not evidence — the models are not
+    deterministic. Returning it rather than only printing it means the evidence
+    survives into the run's trace instead of scrolling away.
     """
     config.require_key(model)
     message = vision.build_image_message(model, prompt, image_path)
+    summary = vision.describe_message(message)
 
     if log_request:
-        print(f"[vision] {model} ← {vision.describe_message(message)}")
+        print(f"[vision] {model} ← {summary}")
 
     response = _get_client().chat.completions.create(
         model=model,
         messages=[message],
         **_token_limit_kwargs(model),
     )
-    return _content_of(response)
+    return _content_of(response), summary

@@ -105,7 +105,9 @@ class Reflection:
 
     feedback: str
     code: str
+    prompt: str
     raw_response: str
+    request_summary: str
     parse_error: str | None = None
 
     @property
@@ -204,12 +206,16 @@ def reflect_on_image_and_regenerate(
             response into a V2 that silently never runs.
     """
     prompt = build_reflection_prompt(instruction, code_v1, out_path_v2)
-    response = llm.complete_with_image(model_name, prompt, chart_path, log_request=log_request)
+    response, request_summary = llm.complete_with_image(
+        model_name, prompt, chart_path, log_request=log_request
+    )
 
     feedback, parse_error = _feedback_from(response)
     return Reflection(
         feedback=feedback,
         code=executor.extract_code(response),
+        prompt=prompt,
         raw_response=response,
+        request_summary=request_summary,
         parse_error=parse_error,
     )

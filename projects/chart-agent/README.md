@@ -167,7 +167,8 @@ LLM으로만 가능한 것(차트 유형 적절성, 색상 구분)은 루브릭�
 ## 데이터셋
 
 랩의 [`coffee_sales.csv`](../../labs/module-2/coffee_sales.csv)를 씁니다.
-없으면 [자체 생성기](chart_agent/dataset.py) 산출물로 폴백합니다.
+없으면 [자체 생성기](chart_agent/dataset.py)의 `data/coffee_sales.generated.csv` 로 폴백합니다.
+(같은 이름이면 헷갈리므로 파일명을 달리 둡니다.)
 
 ```
 date        2024-03-01    (datetime64[us])
@@ -223,7 +224,7 @@ python run.py "Create a plot comparing Q1 coffee sales in 2024 and 2025"
 
 # 단계 단독 — 랩 3.1~3.4 개별 실습 대응
 python run.py "..." --only v1                     # V1 생성·실행까지
-python run.py "..." --from-chart charts/x_v1.png  # 비평부터
+python run.py "..." --from-chart runs/<실행>/<라벨>_v1.png   # 비평부터
 ```
 
 | 옵션 | 동작 |
@@ -257,44 +258,56 @@ HTML 렌더링은 버리되 **표시는 남깁니다** — 콘솔 출력 + 파�
 
 ## 실행 결과
 
-강의 지시문 그대로 실행한 것입니다.
+`runs/20260805-132356_baseline/` 이 저장소에 커밋돼 있습니다.
+**LLM은 비결정적이라 재실행해도 같은 결과가 나오지 않으므로**, 아래 서술을 확인하려면
+그 폴더를 직접 열어보셔야 합니다.
 
 ```
-Step 1  V1 코드 생성    gpt-4.1-mini
-Step 2  V1 실행         charts/lecture_demo_v1.png  (112,846 B)
-Step 3  비평 + 수정     gpt-5, 28.2s, JSON 파싱 정상
-Step 4  V2 실행         charts/lecture_demo_v2.png  (141,434 B)
+runs/{시각}_{라벨}/
+    {라벨}_v1.png              에이전트가 그린 첫 차트
+    {라벨}_v2.png              비평 후 다시 그린 차트
+    artifacts/
+        v1_prompt.txt          보낸 것
+        v1_raw.txt             받은 것 (태그 포함 원문)
+        v1_code.py             파싱한 코드
+        v2_prompt.txt          보낸 것 (V1 코드가 박혀 있음)
+        reflection_raw.txt     받은 것 (JSON + 태그)
+        feedback.txt           파싱한 비평
+        v2_code.py             파싱한 코드
+    trace.json                 단계별 소요·모델·이미지 전달 증거
 ```
 
-### V1의 결함 — 축과 범례가 뒤바뀜
+**단계마다 보낸 것·받은 것·파싱한 것이 모두 남습니다.** 프롬프트를 고쳐가며
+결과를 대조할 때 이 세트가 비교 기준이 됩니다.
 
-x축에는 연도(2024·2025)가 놓였는데 레이블은 `Coffee Name`이고,
-범례 제목은 `Year`인데 정작 음료 8종이 나열됐습니다.
+### 실행이 실패하면
 
-### 비평이 정확히 그것을 지적했습니다
+산출물은 **실행 직전에** 저장되므로, 어디서 깨지든 그때까지의 기록은 디스크에 있습니다.
 
-> *"Axes and legend are mismatched: the x-axis shows years but is labeled
-> 'Coffee Name', and the legend title 'Year' actually lists coffee types."*
+| 실패 지점 | 남는 것 |
+|---|---|
+| V1 응답에 태그 없음 | `v1_prompt` · `v1_raw` |
+| V1 실행 실패 | 위 + `v1_code` + **`v1_work/`** (subprocess 가 실제로 받은 것) |
+| 비평 응답에 태그 없음 | 위 + `v2_prompt` · `reflection_raw` + V1 차트 |
 
-### V2 — 제자리를 찾음
+`v*_work/` 는 성공하면 지웁니다 — 안에 든 것이 `artifacts/` 와 데이터셋의 사본이라
+새 정보가 없기 때문입니다. 실패했을 때만 남겨 traceback 의 줄 번호를 대조할 수 있게 합니다.
 
-x축 = 음료명, 범례 = 2024/2025. 매출 내림차순 정렬과 그리드까지 추가됐습니다.
+### 같은 라벨로 여러 번 돌려도
 
-**랩의 실물 V2가 잃어버렸던 연도 비교 차원이 여기서는 유지됩니다.**
-같은 지시문에 같은 워크플로우인데 결과가 갈립니다 —
-[05번 레슨](../../notes/module-2-reflection/05-evaluating-reflection.md)이
-"재보고 결정하라"고 한 이유입니다.
+폴더 이름에 시각이 들어가므로 **덮어쓰지 않습니다.**
 
-### 단계 단독 실행
+```
+runs/20260805-130427_baseline/
+runs/20260805-132356_baseline/
+```
 
-`--from-chart`로 랩의 실물 `chart_v1.png`을 비평시키면
-*"coffee names are hard to read due to steep rotation"* 을 짚습니다 —
-[회고 §1](../../notes/retrospectives/chart-agent-lab-findings.md)에 기록한 레이블 잘림입니다.
-
-> V1 코드 없이 이미지만 넘어가므로 비평 입력이 약해집니다. 실행 시 경고가 뜹니다.
+랩은 *"매번 `image_basename` 을 바꿔라"* 라고 하지만, 그 부담을 사람에게 떠넘기지 않습니다.
+`--basename` 은 이제 **이 실행이 무엇이었는지 말하는 라벨**입니다 (`baseline`, `q1-sales`,
+`gpt5-vs-claude`).
 
 ### 아직 안 채운 것
 
+- [ ] 모델 조합 비교 (`--reflect-model anthropic:claude-sonnet-5`)
 - [ ] 객관 체크 결과 (V1 vs V2) — B2
-- [ ] 모델 조합을 바꿨을 때의 차이
 - [ ] B1 오류 되먹임 발동 횟수

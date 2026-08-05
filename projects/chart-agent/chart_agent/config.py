@@ -18,11 +18,18 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PROJECT_ROOT.parents[1]
 
-# Where a run leaves its output. Both are git-ignored.
-CHARTS_DIR = PROJECT_ROOT / "charts"
-TRACES_DIR = PROJECT_ROOT / "traces"
+# Every run gets its own directory under here, named for when it started, so a
+# repeated run never overwrites an earlier one and a run's charts, prompts and
+# trace stay together. Git-ignored.
+RUNS_DIR = PROJECT_ROOT / "runs"
+RUN_DIRECTORY_FORMAT = "%Y%m%d-%H%M%S"
+ARTIFACTS_SUBDIRECTORY = "artifacts"
+TRACE_FILENAME = "trace.json"
 
-DEFAULT_IMAGE_BASENAME = "chart"
+# A label for the run rather than a collision guard — the run directory's
+# timestamp handles that. Something describing the run reads better than the
+# lab's "chart": "baseline", "q1-sales", "gpt5-vs-claude".
+DEFAULT_IMAGE_BASENAME = "run"
 
 # Path arithmetic goes stale the moment the package moves, and the symptom would
 # be a missing key rather than a missing directory. `_check_repo_root` turns

@@ -42,7 +42,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--basename",
         default=config.DEFAULT_IMAGE_BASENAME,
-        help="filename prefix; change it between runs so charts are not overwritten",
+        help="label for this run; appears in the run directory and chart filenames",
     )
     parser.add_argument("--only", choices=[STAGE_V1_ONLY], help="stop after generating and running V1")
     parser.add_argument("--from-chart", help="skip V1 and critique this chart instead")
@@ -80,11 +80,13 @@ def _run_from_existing_chart(args: argparse.Namespace) -> int:
 
     source = _dataset_path(args)
     df = dataset.load_and_prepare_data(source)
+    run_dir = workflow.new_run_directory(args.basename)
     run_trace = _new_trace(args, source, generation=SKIPPED, reflection=args.reflect_model)
 
     workflow.reflect_and_execute_v2(
         df=df,
         instruction=args.instruction,
+        run_dir=run_dir,
         basename=args.basename,
         code_v1="(not available — chart supplied directly)",
         chart_v1=chart,
@@ -92,20 +94,23 @@ def _run_from_existing_chart(args: argparse.Namespace) -> int:
         run_trace=run_trace,
         verbose=args.verbose,
     )
-    run_trace.save(config.TRACES_DIR)
+    run_trace.save(run_dir / config.TRACE_FILENAME)
+    report.show_artifact("Run directory", run_dir)
     return 0
 
 
 def _run_v1_only(args: argparse.Namespace) -> int:
     source = _dataset_path(args)
     df = dataset.load_and_prepare_data(source)
+    run_dir = workflow.new_run_directory(args.basename)
     report.show_dataframe_sample(df)
 
     run_trace = _new_trace(args, source, generation=args.gen_model, reflection=SKIPPED)
     workflow.generate_and_execute_v1(
-        df, args.instruction, args.basename, args.gen_model, run_trace, args.verbose
+        df, args.instruction, run_dir, args.basename, args.gen_model, run_trace, args.verbose
     )
-    run_trace.save(config.TRACES_DIR)
+    run_trace.save(run_dir / config.TRACE_FILENAME)
+    report.show_artifact("Run directory", run_dir)
     return 0
 
 

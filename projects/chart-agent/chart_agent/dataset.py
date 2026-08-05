@@ -127,7 +127,10 @@ COMPARISON_YEARS = (BASELINE_YEAR, GROWTH_YEAR)
 
 # The lab's own dataset, when it can be found, in preference to a generated one.
 LAB_DATASET_PATH = Path(__file__).resolve().parents[3] / "labs" / "module-2" / "coffee_sales.csv"
-GENERATED_DATASET_PATH = Path(__file__).resolve().parents[1] / "data" / "coffee_sales.csv"
+# Named apart from the lab's file on purpose: both are called coffee_sales and
+# hold different data, which is an easy mistake to make with only a directory
+# between them.
+GENERATED_DATASET_PATH = Path(__file__).resolve().parents[1] / "data" / "coffee_sales.generated.csv"
 
 
 # --- helpers ---

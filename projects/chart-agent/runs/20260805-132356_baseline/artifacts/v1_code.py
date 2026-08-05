@@ -1,0 +1,34 @@
+import matplotlib.pyplot as plt
+
+# Filter data for Q1 in 2024 and 2025
+df_q1_2024 = df[(df['year'] == 2024) & (df['quarter'] == 1)]
+df_q1_2025 = df[(df['year'] == 2025) & (df['quarter'] == 1)]
+
+# Aggregate total sales price by coffee_name for each year
+sales_2024 = df_q1_2024.groupby('coffee_name')['price'].sum().sort_values(ascending=False)
+sales_2025 = df_q1_2025.groupby('coffee_name')['price'].sum().sort_values(ascending=False)
+
+# Combine indices for aligned plotting
+all_coffees = sorted(set(sales_2024.index) | set(sales_2025.index))
+
+sales_2024_aligned = sales_2024.reindex(all_coffees, fill_value=0)
+sales_2025_aligned = sales_2025.reindex(all_coffees, fill_value=0)
+
+# Plot
+fig, ax = plt.subplots(figsize=(10,6))
+
+width = 0.35
+x = range(len(all_coffees))
+
+ax.bar([i - width/2 for i in x], sales_2024_aligned, width=width, label='Q1 2024')
+ax.bar([i + width/2 for i in x], sales_2025_aligned, width=width, label='Q1 2025')
+
+ax.set_xticks(x)
+ax.set_xticklabels(all_coffees, rotation=45, ha='right')
+ax.set_ylabel('Total Sales Price')
+ax.set_title('Coffee Sales Comparison: Q1 2024 vs Q1 2025')
+ax.legend()
+
+plt.tight_layout()
+plt.savefig('/Users/jaykim/Documents/Projects/ai-pipeline-projects/agentic-ai/projects/chart-agent/runs/20260805-132356_baseline/baseline_v1.png', dpi=300)
+plt.close()

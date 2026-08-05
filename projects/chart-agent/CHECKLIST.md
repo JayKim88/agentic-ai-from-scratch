@@ -24,7 +24,7 @@
 - [x] `OPENAI_API_KEY` · `ANTHROPIC_API_KEY` 확인
 - [x] `pandas` 3.0.5 / `matplotlib` 3.11.1 확인
 - [x] 랩 자료를 [`labs/module-2/`](../../labs/module-2/)로 — HTML · CSV · 차트 2장
-- [x] `.gitignore`에 `charts/` `traces/` 추가
+- [x] `.gitignore`에 `runs/*/v*_work/` 추가 — 실행 결과는 커밋한다
 - [ ] ⏸ **`utils.py`는 3단계 완료 후에 연다** — `vision.py`의 정답지다
 
 ## 1. 데이터 계층 [A] ✅
@@ -172,21 +172,26 @@ print(extract_code(r)[:200])
 - [x] `workflow.py` — `run_workflow()` 대응
   - [x] 파라미터 5개, **반환 dict 5키**
   - [x] `image_basename` → `{base}_v1.png` / `{base}_v2.png`
+  - [x] **실행마다 `runs/{시각}_{라벨}/` 폴더** — 같은 라벨로 여러 번 돌려도 덮어쓰지 않는다.
+        랩은 사람에게 "매번 이름을 바꾸라"고 하지만 그 부담을 코드가 진다
   - [x] **실행 실패 시 `failure_summary()`를 담아 중단** (재시도는 B1)
   - [x] `generate_and_execute_v1` / `reflect_and_execute_v2` 분리 → 단계 단독 실행 가능
 - [x] `report.py` — `print_html` 대응
   - [x] 데이터 샘플 5행 · 추출 코드 · V1 경로 · **비평 원문** · V2 코드 · V2 경로
-  - [x] 산출물 4종 파일 저장 (`v1_code.py` `v2_code.py` `feedback.txt` `reflection_raw.txt`)
+  - [x] 산출물 7종 저장 — 단계마다 **보낸 것·받은 것·파싱한 것**
+        (`v1_prompt` `v1_raw` `v1_code` `v2_prompt` `reflection_raw` `feedback` `v2_code`)
+  - [x] **실행 직전에 저장.** 어디서 깨지든 그때까지의 기록이 디스크에 남는다 — 네 실패 경로로 검증
+  - [x] `v*_work/` 는 성공 시 삭제, 실패 시 보존 (traceback 줄 번호 대조용)
 - [x] `trace.py` — 단계별 소요·모델·산출물 경로 JSON
 - [x] `run.py` — CLI + 단계 단독 실행
 
 ### 실행 결과 — 강의 지시문 그대로
 
 ```
-Step 1  V1 코드 생성    gpt-4.1-mini
-Step 2  V1 실행         charts/lecture_demo_v1.png  (112,846 B)
-Step 3  비평 + 수정     gpt-5, 28.2s, 파싱 정상
-Step 4  V2 실행         charts/lecture_demo_v2.png  (141,434 B)
+Step 1  V1 코드 생성    gpt-4.1-mini            7.1s
+Step 2  V1 실행         20260805-132356_baseline/…_v1.png   120,548 B
+Step 3  비평 + 수정     gpt-5                   24.7s
+Step 4  V2 실행         20260805-132356_baseline/…_v2.png   181,123 B
 ```
 
 **V1의 결함:** x축은 연도인데 레이블이 `Coffee Name`, 범례 제목은 `Year` 인데 음료가 나열됐다.

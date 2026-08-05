@@ -115,7 +115,15 @@ class ExecutionResult:
 
 
 class MissingCodeBlockError(ValueError):
-    """The model's response carried no `<execute_python>` block."""
+    """The model's response carried no `<execute_python>` block.
+
+    Carries the response so a caller can save it before re-raising. A reply that
+    could not be parsed is the one most worth reading afterwards.
+    """
+
+    def __init__(self, message: str, response: str = "") -> None:
+        super().__init__(message)
+        self.response = response
 
 
 # --- helpers ---
@@ -149,7 +157,8 @@ def extract_code(response: str) -> str:
     if match is None:
         preview = response.strip()[:200] or "(empty response)"
         raise MissingCodeBlockError(
-            f"no <execute_python> block in the response. Response began: {preview!r}"
+            f"no <execute_python> block in the response. Response began: {preview!r}",
+            response=response,
         )
 
     return match.group(1).strip()

@@ -14,11 +14,6 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-# --- constants ---
-
-TRACE_FILENAME_FORMAT = "%Y%m%d-%H%M%S"
-
-
 # --- types ---
 
 
@@ -61,12 +56,9 @@ class RunTrace:
             record.duration_seconds = round(time.perf_counter() - started, 2)
             self.steps.append(record)
 
-    def save(self, directory: str | Path) -> Path:
-        """Write the trace as JSON, named for when the run started."""
-        target = Path(directory)
-        target.mkdir(parents=True, exist_ok=True)
-
-        stamp = datetime.fromisoformat(self.started_at).strftime(TRACE_FILENAME_FORMAT)
-        path = target / f"{stamp}.json"
-        path.write_text(json.dumps(asdict(self), indent=2, ensure_ascii=False), encoding="utf-8")
-        return path
+    def save(self, path: str | Path) -> Path:
+        """Write the trace as JSON beside the run's other output."""
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(asdict(self), indent=2, ensure_ascii=False), encoding="utf-8")
+        return target

@@ -12,9 +12,11 @@ projects/research-agent/reports/
 projects/research-agent/traces/
 projects/research-agent/.cache/
 
-# chart-agent 실행 산출물. data/coffee_sales.csv 는 재현성을 위해 커밋한다.
-projects/chart-agent/charts/
-projects/chart-agent/traces/
+# chart-agent: 실행 결과는 커밋한다 — 실행끼리 비교해야 프로세스를 개선할 수 있고,
+# LLM 이 비결정적이라 재실행으로는 같은 결과를 얻을 수 없다.
+# 다만 subprocess 작업 폴더(실패한 실행에만 남는다)는 제외한다.
+projects/chart-agent/runs/*/v*_work/
+
 
 # macOS
 .DS_Store
