@@ -1,0 +1,81 @@
+You are a data visualization expert.
+Your task: critique the attached chart and the original code against the given instruction,
+then return improved matplotlib code.
+
+Original code (for context):
+import matplotlib.pyplot as plt
+
+# Filter data for Q1 in 2024 and 2025
+df_q1_2024 = df[(df['year'] == 2024) & (df['quarter'] == 1)]
+df_q1_2025 = df[(df['year'] == 2025) & (df['quarter'] == 1)]
+
+# Aggregate total sales price by coffee_name for each year
+sales_2024 = df_q1_2024.groupby('coffee_name')['price'].sum().sort_values(ascending=False)
+sales_2025 = df_q1_2025.groupby('coffee_name')['price'].sum().sort_values(ascending=False)
+
+# Combine indices for aligned plotting
+all_coffees = sorted(set(sales_2024.index) | set(sales_2025.index))
+
+sales_2024_aligned = sales_2024.reindex(all_coffees, fill_value=0)
+sales_2025_aligned = sales_2025.reindex(all_coffees, fill_value=0)
+
+# Plot
+fig, ax = plt.subplots(figsize=(10,6))
+
+width = 0.35
+x = range(len(all_coffees))
+
+ax.bar([i - width/2 for i in x], sales_2024_aligned, width=width, label='Q1 2024')
+ax.bar([i + width/2 for i in x], sales_2025_aligned, width=width, label='Q1 2025')
+
+ax.set_xticks(x)
+ax.set_xticklabels(all_coffees, rotation=45, ha='right')
+ax.set_ylabel('Total Sales Price')
+ax.set_title('Coffee Sales Comparison: Q1 2024 vs Q1 2025')
+ax.legend()
+
+plt.tight_layout()
+plt.savefig('/Users/jaykim/Documents/Projects/ai-pipeline-projects/agentic-ai/projects/chart-agent/runs/20260805-132356_baseline/baseline_v1.png', dpi=300)
+plt.close()
+
+OUTPUT FORMAT (STRICT):
+1) First line: a valid JSON object with ONLY the "feedback" field.
+Example: {"feedback": "The legend is unclear and the axis labels overlap."}
+
+2) After a newline, output ONLY the refined Python code wrapped in:
+<execute_python>
+...
+</execute_python>
+
+3) Import all necessary libraries in the code. Don't assume any imports from the original code.
+
+HARD CONSTRAINTS:
+- Do NOT include Markdown, backticks, or any extra prose outside the two parts above.
+- Use pandas/matplotlib only (no seaborn).
+- Assume df already exists; do not read from files.
+- Save to '/Users/jaykim/Documents/Projects/ai-pipeline-projects/agentic-ai/projects/chart-agent/runs/20260805-134121_claude-fixed/claude-fixed_v2.png' with dpi=300.
+- Always call plt.close() at the end (no plt.show()).
+- Include all necessary import statements.
+
+IMPORTANT: The 'date' column is already a pandas datetime64 type.
+- Do NOT concatenate 'date' with 'time' using string operations.
+- To filter by year/quarter, use: df[df['year'] == 2024] or df['date'].dt.year == 2024
+- The 'quarter' and 'year' columns already exist as integers; use them directly.
+
+Schema (columns available in df):
+- date   (datetime64 — already parsed; use df['date'].dt.year, etc.)
+- time   (string, HH:MM — do NOT concatenate with date)
+- cash_type (string: 'card' or 'cash')
+- card   (string)
+- price  (float)
+- coffee_name (string)
+- quarter (int, 1–4)
+- month  (int, 1–12)
+- year   (int)
+
+CRITICAL TYPE RULE: 'date' is already datetime64.
+- NEVER do: df['date'] + ' ' + df['time']  ← this will crash
+- ALWAYS filter by year/quarter using the integer columns: df[df['year'] == 2024]
+
+Instruction:
+Create a plot comparing Q1 coffee sales in 2024 and 2025 using the data in coffee_sales.csv.

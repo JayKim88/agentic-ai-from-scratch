@@ -51,7 +51,7 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 | 프로젝트 | 대응 | 출발점 | 상태 |
 |---|---|---|---|
 | [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | **강의 영상만** | ✅ 완료 — 자체 평가 8/8 |
-| [chart-agent](projects/chart-agent/README.md) | 모듈 2 "Chart Generation" | **랩 자료 확보** | 🔨 4/7단계 |
+| [chart-agent](projects/chart-agent/README.md) | 모듈 2 "Chart Generation" | **랩 자료 확보** | 🔨 5/7단계 (랩 재현 완료) |
 
 두 프로젝트의 성격이 다르다. 모듈 1은 랩을 못 봐서 **백지에서 설계**했고,
 모듈 2는 랩 자료(`labs/module-2/`)를 얻어 **명세가 있는 재현**이다.

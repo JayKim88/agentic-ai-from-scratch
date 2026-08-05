@@ -10,7 +10,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩 "Chart Generation" 자체 구
 | 랩 대조 기록 | [회고](../../notes/retrospectives/chart-agent-lab-findings.md) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 4/7단계 완료.** 랩의 4단계 워크플로우가 끝까지 동작합니다. 다음은 5단계 검증.
+> **구현 상태: 5/7단계 완료.** 랩 재현(A)이 끝났습니다. 다음은 확장(B).
 
 ---
 

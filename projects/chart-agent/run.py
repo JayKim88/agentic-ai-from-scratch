@@ -22,6 +22,9 @@ LECTURE_INSTRUCTION = (
 
 STAGE_V1_ONLY = "v1"
 
+# What `generate_and_execute_v1` saves; `--from-chart` reads it back.
+V1_CODE_FILENAME = "v1_code.py"
+
 # Recorded in the trace when a partial run never reaches that model.
 SKIPPED = "(skipped)"
 
@@ -45,7 +48,10 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="label for this run; appears in the run directory and chart filenames",
     )
     parser.add_argument("--only", choices=[STAGE_V1_ONLY], help="stop after generating and running V1")
-    parser.add_argument("--from-chart", help="skip V1 and critique this chart instead")
+    parser.add_argument(
+        "--from-chart",
+        help="skip V1 and critique this chart from an earlier run (its code is read alongside)",
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="show generated code and requests")
     return parser.parse_args(argv)
 
@@ -63,20 +69,39 @@ def _new_trace(args: argparse.Namespace, source: Path, *, generation: str, refle
     )
 
 
-def _run_from_existing_chart(args: argparse.Namespace) -> int:
-    """Critique a chart that already exists, then run the revision.
+def _code_beside(chart: Path) -> Path:
+    """Where a run keeps the code that drew `chart`."""
+    return chart.parent / config.ARTIFACTS_SUBDIRECTORY / V1_CODE_FILENAME
 
-    The V1 code is not on disk next to the chart, so the critique goes in
-    without it. That is a weaker input than the workflow gives — the lab passes
-    the code precisely because an image does not explain itself — and the
-    warning says so rather than letting the difference pass unnoticed.
+
+def _run_from_existing_chart(args: argparse.Namespace) -> int:
+    """Critique a chart from an earlier run, then run the revision.
+
+    Both the image and the code go in, as the lab's function requires. The
+    lab's own section-by-section flow has the code too — a notebook keeps
+    `code_v1` in a variable between cells — so passing the image alone would
+    reproduce the shape of that flow without its substance.
+
+    It also produces worse output. The step returns *revised* code, and a model
+    given no code to revise writes one from scratch, which collides with the
+    prompt's "assume df already exists". Claude did exactly that twice, ending
+    up with `df = None`; with the code alongside, the same model and prompt
+    succeeded.
     """
     chart = Path(args.from_chart)
     if not chart.exists():
         print(f"error: {chart} does not exist", file=sys.stderr)
         return 1
 
-    print(f"  ⚠ critiquing {chart.name} without its source code; the critique sees less than usual")
+    code_file = _code_beside(chart)
+    if not code_file.exists():
+        print(
+            f"error: no {V1_CODE_FILENAME} beside {chart}.\n"
+            f"       Looked in {code_file.parent}. Point at a chart from a run directory —\n"
+            f"       the reflection step revises code, so it needs the code that drew the chart.",
+            file=sys.stderr,
+        )
+        return 1
 
     source = _dataset_path(args)
     df = dataset.load_and_prepare_data(source)
@@ -88,7 +113,7 @@ def _run_from_existing_chart(args: argparse.Namespace) -> int:
         instruction=args.instruction,
         run_dir=run_dir,
         basename=args.basename,
-        code_v1="(not available — chart supplied directly)",
+        code_v1=code_file.read_text(encoding="utf-8"),
         chart_v1=chart,
         reflection_model=args.reflect_model,
         run_trace=run_trace,

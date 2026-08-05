@@ -76,7 +76,13 @@ Return ONLY the code wrapped in <execute_python> tags."""
 
 
 def build_generation_prompt(instruction: str, out_path: str) -> str:
-    """Render the step-1 prompt. Separated from the call so it can be inspected."""
+    """Render the step-1 prompt.
+
+    Separate from the call so `workflow` can save the prompt before sending it.
+    Both build it — the function is pure, so the saved copy and the sent copy
+    cannot differ, and `generate_chart_code` keeps the plain-string return the
+    lab defines.
+    """
     return GENERATION_PROMPT.format(
         schema=DATAFRAME_SCHEMA_BLOCK,
         instruction=instruction,

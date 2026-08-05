@@ -42,10 +42,9 @@ REPO_ROOT_MARKER = "labs"
 DEFAULT_GENERATION_MODEL = "openai:gpt-4.1-mini"
 DEFAULT_REFLECTION_MODEL = "openai:gpt-5"
 
-# The lab lists Claude as a commented-out alternative for the reflection step.
-# Keeping it reachable is not decoration: the two providers want different
-# image payloads, so this is the only way to exercise that split.
-ANTHROPIC_REFLECTION_MODEL = "anthropic:claude-sonnet-5"
+# Claude is reachable as --reflect-model anthropic:claude-sonnet-5, which the
+# lab lists as a commented-out alternative. No constant for it: the CLI takes
+# the string directly, so a second default would only go stale.
 
 PROVIDER_SEPARATOR = ":"
 ANTHROPIC_MARKERS = ("anthropic", "claude")

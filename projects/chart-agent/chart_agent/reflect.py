@@ -105,7 +105,6 @@ class Reflection:
 
     feedback: str
     code: str
-    prompt: str
     raw_response: str
     request_summary: str
     parse_error: str | None = None
@@ -176,7 +175,14 @@ def validate_schema_blocks() -> None:
 
 
 def build_reflection_prompt(instruction: str, code_v1: str, out_path_v2: str) -> str:
-    """Render the step-3 prompt. Separated from the call so it can be inspected."""
+    """Render the step-3 prompt.
+
+    Separate from the call so `workflow` can save the prompt before sending it —
+    a request that fails is one worth reading. Both build it, which means the
+    formatting runs twice; the function is pure, so the saved copy and the sent
+    copy cannot differ. Returning it from the call instead would mean changing
+    the signature the lab defines.
+    """
     return REFLECTION_PROMPT.format(
         code_v1=code_v1,
         out_path_v2=out_path_v2,
@@ -214,7 +220,6 @@ def reflect_on_image_and_regenerate(
     return Reflection(
         feedback=feedback,
         code=executor.extract_code(response),
-        prompt=prompt,
         raw_response=response,
         request_summary=request_summary,
         parse_error=parse_error,

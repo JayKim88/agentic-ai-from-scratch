@@ -1,0 +1,65 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Filter data for Q1 in 2024 and 2025
+df_q1_2024 = df[(df['year'] == 2024) & (df['quarter'] == 1)]
+df_q1_2025 = df[(df['year'] == 2025) & (df['quarter'] == 1)]
+
+# Aggregate total sales price by coffee_name for each year
+sales_2024 = df_q1_2024.groupby('coffee_name')['price'].sum()
+sales_2025 = df_q1_2025.groupby('coffee_name')['price'].sum()
+
+# Combine indices for aligned plotting, sort by 2025 sales descending for better readability
+all_coffees = sorted(set(sales_2024.index) | set(sales_2025.index))
+sales_2024_aligned = sales_2024.reindex(all_coffees, fill_value=0)
+sales_2025_aligned = sales_2025.reindex(all_coffees, fill_value=0)
+
+# Sort by combined total for a cleaner visual order
+combined = sales_2024_aligned + sales_2025_aligned
+order = combined.sort_values(ascending=False).index
+sales_2024_aligned = sales_2024_aligned.reindex(order)
+sales_2025_aligned = sales_2025_aligned.reindex(order)
+all_coffees = list(order)
+
+fig, ax = plt.subplots(figsize=(12, 7))
+
+width = 0.38
+x = np.arange(len(all_coffees))
+
+bars_2024 = ax.bar(x - width/2, sales_2024_aligned, width=width, label='Q1 2024',
+                    color='#1f77b4', edgecolor='black', linewidth=0.5)
+bars_2025 = ax.bar(x + width/2, sales_2025_aligned, width=width, label='Q1 2025',
+                    color='#ff7f0e', edgecolor='black', linewidth=0.5)
+
+# Add value labels on top of bars
+for bar in bars_2024:
+    height = bar.get_height()
+    if height > 0:
+        ax.annotate(f'{height:.0f}', xy=(bar.get_x() + bar.get_width()/2, height),
+                    xytext=(0, 3), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=8)
+
+for bar in bars_2025:
+    height = bar.get_height()
+    if height > 0:
+        ax.annotate(f'{height:.0f}', xy=(bar.get_x() + bar.get_width()/2, height),
+                    xytext=(0, 3), textcoords="offset points",
+                    ha='center', va='bottom', fontsize=8)
+
+ax.set_xticks(x)
+ax.set_xticklabels(all_coffees, rotation=45, ha='right', fontsize=10)
+ax.set_ylabel('Total Sales Price ($)', fontsize=11)
+ax.set_xlabel('Coffee Type', fontsize=11)
+ax.set_title('Coffee Sales Comparison: Q1 2024 vs Q1 2025', fontsize=15, fontweight='bold', pad=15)
+ax.legend(fontsize=11, frameon=True)
+ax.grid(axis='y', linestyle='--', alpha=0.4)
+ax.set_axisbelow(True)
+
+# Remove top and right spines for cleaner look
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+
+plt.tight_layout()
+plt.savefig('/Users/jaykim/Documents/Projects/ai-pipeline-projects/agentic-ai/projects/chart-agent/runs/20260805-134121_claude-fixed/claude-fixed_v2.png', dpi=300)
+plt.close()
