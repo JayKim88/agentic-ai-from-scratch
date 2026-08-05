@@ -17,6 +17,9 @@ projects/research-agent/.cache/
 # 다만 subprocess 작업 폴더(실패한 실행에만 남는다)는 제외한다.
 projects/chart-agent/runs/*/v*_work/
 
+# sql-agent: DB 는 생성물이다. 생성기가 시드 고정이라 언제든 같은 파일이 나온다.
+projects/sql-agent/*.db
+projects/sql-agent/**/*.db
 
 # macOS
 .DS_Store

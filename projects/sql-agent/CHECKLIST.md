@@ -7,7 +7,7 @@
 | 단계 | 구분 | 상태 |
 |---|---|---|
 | 0. 준비 | — | 🔄 |
-| 1. 데이터 계층 (SQLite) | A | ⬜ |
+| 1. 데이터 계층 (SQLite) | A | ✅ |
 | 2. 실행 계층 (쿼리 실행) | A | ⬜ |
 | 3. LLM 계층 (프롬프트 3개) | A | ⬜ |
 | 4. 워크플로우와 판정기 | A | ⬜ |
@@ -24,7 +24,7 @@
 - [x] 랩 자료를 [`labs/module-2/sql/`](../../labs/module-2/sql/) 로 —
       [`M2_UGL_2.md`](../../labs/module-2/sql/M2_UGL_2.md) · `utils.py` · 랩 `README.md`
 - [x] `to_markdown` 에 필요한 `tabulate` — 이미 설치·기록돼 있다
-- [ ] `.gitignore` 에 `products.db` 추가 (생성물이고 결정적이라 커밋 불필요)
+- [x] `.gitignore` 에 `products.db` 추가 (생성물이고 결정적이라 커밋 불필요)
 - [ ] 재사용할 모듈 결정 — **복사한다** ([PLAN §7](PLAN.md))
 
 ## 1. 데이터 계층 [A]
@@ -32,15 +32,18 @@
 **데이터가 정답을 결정한다.** 생성기가 `random.Random(42)` 로 결정적이므로
 **충실히 재현**한다. 직접 만들면 정답값이 달라져 랩과 대조할 수 없다.
 
-- [ ] `dataset.py` — 랩 `create_transactions_db` 재현
-  - [ ] 11컬럼: `id` `product_id` `product_name` `brand` `category` `color`
-        `action` `qty_delta` `unit_price` `notes` `ts`
-  - [ ] 시드 `42` · 제품 100 × 이벤트 50 · 비율 `restock .25 / sale .6 / price_update .15`
-  - [ ] `action` 4종 — `insert` 는 개시 재고, `sale` 은 **그 시점 `current_price`**
-  - [ ] `qty_delta` 부호 — `insert`/`restock` +, `sale` **−**, `price_update` 0
-  - [ ] `unit_price` 는 `restock` 에서만 NULL (`price_update` 는 새 가격을 넣는다)
-  - [ ] `ts` 는 랩과 동일하게 `DEFAULT CURRENT_TIMESTAMP` 에 맡긴다
-- [ ] `get_schema(db_path)` — `PRAGMA table_info` 기반, 한 곳으로 통일 ([PLAN §5.5](PLAN.md))
+- [x] `sql_agent/dataset.py` — 랩 `create_transactions_db` 재현
+  - [x] 11컬럼 · 시드 `42` · 제품 100 × 이벤트 50 · 비율 `.25 / .6 / .15`
+  - [x] `action` 4종 — `insert` 는 개시 재고, `sale` 은 **그 시점 `current_price`**
+  - [x] `qty_delta` 부호 — `insert`/`restock` +, `sale` **−**, `price_update` 0
+  - [x] `unit_price` 는 `restock` 에서만 NULL
+  - [x] `ts` 는 랩과 동일하게 `DEFAULT CURRENT_TIMESTAMP` 에 맡긴다
+  - [x] **`brand`/`category` 를 `product_name.split()` 으로 뽑는다** —
+        "New Balance" 제품이 brand `New` · category `Balance` 가 된다.
+        고치면 데이터가 달라지므로 그대로 재현
+- [x] `get_schema(db_path)` — `PRAGMA table_info` 기반, 한 곳으로 통일 ([PLAN §5.5](PLAN.md))
+  - [x] 랩 `get_schema` 와 문자열까지 일치 확인
+- [x] `ensure_database()` — 없을 때만 생성
 
 ### 랩과 같은 데이터인지 확인 — 회귀 테스트로 고정
 
@@ -48,8 +51,21 @@
   - [x] `SUM(qty_delta * unit_price)` + `WHERE action='sale'` → **−190,571.46** (blue)
   - [x] `SUM(ABS(qty_delta) * unit_price)` → **+358,315.09** (white)
   - [x] 1위가 **blue → white** 로 뒤집힌다
-- [ ] 위 세 값을 **회귀 테스트로 고정** — 우리 재현본이 같은 숫자를 내는가
-- [ ] 평가 질문 6개의 정답값도 함께 고정 ([PLAN §6.1](PLAN.md))
+- [x] `sql_agent/invariants.py` — 위 값들을 **고정하고 검사한다**
+  - [x] 행 수 · action 별 건수 · `restock` 의 `unit_price` 전부 NULL
+  - [x] `ts` 가 **생성 시각 몇 초 안**에 들어간다 — distinct 개수가 아니라 **폭**으로 검사한다.
+        `CURRENT_TIMESTAMP` 는 1초 해상도라 초 경계를 넘으면 distinct 가 2가 된다
+  - [x] 부호 역전 (`blue` → `white`) 과 필터 없는 값 **−150,511.18**
+  - [x] 평가 질문 6개 — **모델이 받을 문장 그대로** `EXPECTATIONS` 에 보관.
+        채점기와 평가 세트가 같은 곳을 읽어 문구가 갈라지지 않게 한다
+  - [x] **랩 생성기와 전 행 대조** — `compare_with_lab_generator()`
+- [x] **10컬럼 × 5,000행 완전 일치 확인** (`ts` 는 생성 시각이라 제외)
+- [x] 검사가 실제로 실패를 잡는지 확인 — 시드·비율·제품수 변경, `notes` 한 줄 변경,
+      테이블 없는 DB 모두 검출됨. **`notes` 변경은 값 불변식을 통과하므로 행 대조가 필요하다**
+
+```bash
+python -m sql_agent.invariants
+```
 
 > 이 숫자들이 재현되지 않으면 랩과 다른 데이터를 만든 것이다. **먼저 이것부터 확인**한다.
 

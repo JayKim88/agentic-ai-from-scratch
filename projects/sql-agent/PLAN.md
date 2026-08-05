@@ -333,11 +333,14 @@ SQL 오류 메시지가 한 행짜리 DataFrame 이 되어 `to_markdown()` 을 �
 같은 답을 내는 SQL 은 여러 가지다.
 
 **질문 세트 — 전부 실제로 돌려 정답이 존재함을 확인했다.**
+질문 문장과 정답은 [`invariants.py`](sql_agent/invariants.py) 의 `EXPECTATIONS` 가 원본이고,
+아래 표는 그 사본이다. 채점기(§6.2)와 평가 세트도 같은 곳을 읽는다.
+
 
 | 유형 | 질문 | 정답 | 요구하는 것 |
 |---|---|---|---|
-| 부호 | *"Which color has the highest total sales? (sale events only)"* | white / 358,315.09 | `qty_delta < 0` 인지 |
-| 부호 | *"Which brand generated the most sales revenue? (sale events only)"* | Nike / 384,355.53 | 같음, 그룹만 다름 |
+| 부호 | *"Which color of product has the highest total sales? Consider sale events only."* | white / 358,315.09 | `qty_delta < 0` 인지 |
+| 부호 | *"Which brand generated the most sales revenue? Consider sale events only."* | Nike / 384,355.53 | 같음, 그룹만 다름 |
 | 순서 | *"What is the current price of product 1?"* | 57.16 | 마지막 가격 이벤트를 `id` 로 찾는다 |
 | 상태 재구성 | *"Which product has the highest current stock?"* | 34번 / 197 | `SUM(qty_delta)` — 여기서는 부호가 맞다 |
 | 단순 집계 | *"How many sale events are there?"* | 2,919 | 대조군 |
@@ -345,7 +348,8 @@ SQL 오류 메시지가 한 행짜리 DataFrame 이 되어 `to_markdown()` 을 �
 
 **질문 설계 제약 두 가지 — 데이터를 확인해서 알아낸 것이다.**
 
-1. **시간 조건을 쓸 수 없다.** `ts` 는 5,000행이 모두 같은 값이라 변동이 없다.
+1. **시간 조건을 쓸 수 없다.** `ts` 는 `CURRENT_TIMESTAMP` 기본값이라 5,000행이
+   전부 DB 를 만든 그 몇 초 안에 들어간다. 어떤 날짜 필터도 전부이거나 0행이다.
    순서가 필요하면 `id` 를 쓴다. 랩의 예제 질문도 시간과 무관하므로 재현에는 지장이 없다.
 2. **`restock` 의 금액을 물을 수 없다.** `unit_price` 가 1,258행 전부 NULL 이라
    `SUM(qty_delta * unit_price)` 가 NULL 이 된다. 금액 대신 수량을 묻는다.
@@ -356,7 +360,7 @@ SQL 오류 메시지가 한 행짜리 DataFrame 이 되어 `to_markdown()` 을 �
 ⚠ **질문이 모호하면 정확도가 모델 능력이 아니라 우리 질문의 품질을 잰다.**
 "총 매출" 하나만 해도 `sale` 행만 셀지 갈린다. 대응:
 
-1. 질문에 해석을 못박는다 — *"sale events only"*
+1. 질문에 해석을 못박는다 — *"Consider sale events only."*
 2. 그래도 갈리면 정답을 **허용 집합**으로 둔다
 3. 오답을 **해석 차이 / 실제 오류**로 분류한다
 
