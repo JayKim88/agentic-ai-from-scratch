@@ -166,7 +166,7 @@ LLM으로만 가능한 것(차트 유형 적절성, 색상 구분)은 루브릭�
 
 ## 데이터셋
 
-랩의 [`coffee_sales.csv`](../../labs/module-2/coffee_sales.csv)를 씁니다.
+랩의 [`coffee_sales.csv`](../../labs/module-2/chart/coffee_sales.csv)를 씁니다.
 없으면 [자체 생성기](chart_agent/dataset.py)의 `data/coffee_sales.generated.csv` 로 폴백합니다.
 (같은 이름이면 헷갈리므로 파일명을 달리 둡니다.)
 

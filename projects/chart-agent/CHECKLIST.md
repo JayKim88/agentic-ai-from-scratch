@@ -138,7 +138,7 @@ aisuite는 `content`를 양쪽 다 그대로 통과시키므로 **블록만 맞�
 | `openai:gpt-4.1` | 〃 | 700 | Blue and orange |
 | `anthropic:claude-sonnet-5` | 〃 | 600 | Blue and Orange |
 
-입력은 랩의 실제 [`chart_v1.png`](../../labs/module-2/chart_v1.png).
+입력은 랩의 실제 [`chart_v1.png`](../../labs/module-2/chart/chart_v1.png).
 `log_request=True`로 요청 페이로드도 남는다 — 비평이 다르다는 것만으로는 증명이 안 되기 때문이다.
 
 ### V1 생성 → 실행 (랩 step 1~2)

@@ -7,14 +7,27 @@ DeepLearning.AI [Agentic AI](https://www.deeplearning.ai/courses/agentic-ai) 랩
 
 ## 보관 중인 자료
 
-| 모듈 | 파일 | 내용 |
-|---|---|---|
-| 2 | [M2_UGL_1.html](module-2/M2_UGL_1.html) | Chart Generation 랩 노트북 HTML 내보내기 (340KB) |
-| 2 | [coffee_sales.csv](module-2/coffee_sales.csv) | 데이터셋 3,636행 · 2024-03-01 ~ 2025-03-23 |
-| 2 | [chart_v1.png](module-2/chart_v1.png) · [chart_v2.png](module-2/chart_v2.png) | 랩이 실제로 생성한 V1·V2 차트 |
+모듈 2에는 랩이 둘이라 랩별로 나눠 둔다.
 
-`utils.py`는 아직 받지 않았습니다 — `image_openai_call`/`image_anthropic_call`이
-[chart-agent](../projects/chart-agent/README.md) 3단계의 정답지라 그 단계를 마친 뒤 대조합니다.
+### `module-2/chart/` — Chart Generation
+
+| 파일 | 내용 |
+|---|---|
+| [M2_UGL_1.html](module-2/chart/M2_UGL_1.html) | 노트북 HTML 내보내기 (340KB) |
+| [coffee_sales.csv](module-2/chart/coffee_sales.csv) | 데이터셋 3,636행 · 2024-03-01 ~ 2025-03-23 |
+| [chart_v1.png](module-2/chart/chart_v1.png) · [chart_v2.png](module-2/chart/chart_v2.png) | 랩이 실제로 생성한 V1·V2 차트 |
+| `utils.py` | 받지 않음. [회고 §8](../notes/retrospectives/chart-agent-lab-findings.md)에 내용을 대조해 기록했다 |
+
+### `module-2/sql/` — Improving SQL Generation with Reflection
+
+| 파일 | 내용 |
+|---|---|
+| [M2_UGL_2.md](module-2/sql/M2_UGL_2.md) | 노트북 마크다운 내보내기. 프롬프트 3개 전문 포함 |
+| [utils.py](module-2/sql/utils.py) | `create_transactions_db` · `get_schema` · `execute_sql` · `print_html` |
+| [README.md](module-2/sql/README.md) | 이전 버전(`products` 평면 테이블) 기준이라 참고용 |
+
+마크다운 내보내기라 실행 출력 셀은 없다. 재현 확인은
+[sql-agent](../projects/sql-agent/PLAN.md)의 판정기와 반복 실행으로 한다.
 
 ## 원칙
 

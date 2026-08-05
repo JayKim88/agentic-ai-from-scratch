@@ -12,9 +12,9 @@
 
 | 자료 | 상태 |
 |---|---|
-| [`M2_UGL_1.html`](../../labs/module-2/M2_UGL_1.html) | 코드 셀 25 · 마크다운 20. 함수 4개와 프롬프트 전문 |
-| [`coffee_sales.csv`](../../labs/module-2/coffee_sales.csv) | 3,636행, 2024-03-01 ~ 2025-03-23 |
-| [`chart_v1.png`](../../labs/module-2/chart_v1.png) · [`chart_v2.png`](../../labs/module-2/chart_v2.png) | 랩의 실제 산출물 |
+| [`M2_UGL_1.html`](../../labs/module-2/chart/M2_UGL_1.html) | 코드 셀 25 · 마크다운 20. 함수 4개와 프롬프트 전문 |
+| [`coffee_sales.csv`](../../labs/module-2/chart/coffee_sales.csv) | 3,636행, 2024-03-01 ~ 2025-03-23 |
+| [`chart_v1.png`](../../labs/module-2/chart/chart_v1.png) · [`chart_v2.png`](../../labs/module-2/chart/chart_v2.png) | 랩의 실제 산출물 |
 | `utils.py` | ⏸ **의도적으로 열지 않음.** 3단계 `vision.py`의 정답지다 |
 
 `utils.py`를 열지 않고 호출부에서 읽어낸 계약:
