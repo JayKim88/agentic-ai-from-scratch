@@ -10,7 +10,7 @@
 | 1. 데이터 계층 (SQLite) | A | ✅ |
 | 2. 실행 계층 (쿼리 실행) | A | ✅ |
 | 3. LLM 계층 (프롬프트 3개) | A | ✅ |
-| 4. 워크플로우와 판정기 | A | ⬜ |
+| 4. 워크플로우와 판정기 | A | ✅ |
 | 5. 재현 검증 · 성공률 · 모델 비교 | A | ⬜ |
 | 6. 확장 (B1·B2) | B | ⬜ |
 | 7. 회고 | — | ⬜ |
@@ -134,22 +134,40 @@ python -m sql_agent.sqlgen
 
 ## 4. 워크플로우와 판정기 [A]
 
-- [ ] `workflow.py` — `run_sql_workflow()` 대응
-  - [ ] 스키마 → V1 → 실행 → 검토 → V2 → 실행
-  - [ ] 랩은 반환값이 없다. **우리는 산출물 dict 를 돌려준다** (저장·판정·집계에 필요)
-  - [ ] 조건 4개 — `none` / `text` / `feedback` / `feedback-t0` ([PLAN §5.4](PLAN.md))
-- [ ] **`scoring.py` — 정답 판정기** ([PLAN §6.2](PLAN.md))
-  - [ ] 오류 DataFrame 아님 · 1행 이상 · 첫 행 키 일치 · 값 ±0.01
-  - [ ] SQL 문자열은 보지 않는다. 같은 답을 내는 SQL 은 여러 가지다
-  - [ ] **이것이 완료 기준 4·7의 토대다.** 워크플로우와 함께 굳힌다
-- [ ] `report.py` — 콘솔 + 파일 저장. **판정은 값을 보고 낸다**
-- [ ] `trace.py` — 단계별 소요·모델·파싱 상태
-- [ ] `run.py` — CLI
+- [x] **`sql_agent/scoring.py` — 정답 판정기** ([PLAN §6.2](PLAN.md))
+  - [x] 오류 프레임 아님 · 1행 이상 · 첫 행 키 일치 · 값 ±0.01
+  - [x] SQL 문자열은 보지 않는다. `ABS(qty_delta)` 와 `-qty_delta` 는 같은 답이다
+  - [x] 실패해도 `value_delta` 를 남긴다 — 0.09 차이와 색이 다른 것은 다른 이야기다
+  - [x] **LLM 없이 검증** — 정답 SQL 6/6 통과, 틀린 SQL 7종 전부 탈락,
+        표현만 다른 SQL 4종(컬럼 순서 반대 포함) 전부 통과
+- [x] `sql_agent/workflow.py` — `run_sql_workflow()` 대응
+  - [x] 스키마 → V1 → 실행 → 검토 → V2 → 실행
+  - [x] 랩은 반환값이 없다. **우리는 `WorkflowResult` 를 돌려준다**
+        (기획서에는 "dict" 라고 적었으나 `final_result` 같은 파생값이 필요해 데이터클래스로)
+  - [x] 조건 4개 — `none` / `text` / `feedback` / `feedback-t0` ([PLAN §5.4](PLAN.md))
+  - [x] **첫 모델 호출 전에 `check_prompts()`** — 240회를 돌린 뒤 프롬프트가
+        어긋나 있었음을 알면 전부 버려야 한다
+- [x] `sql_agent/report.py` — 콘솔 + 파일 저장. **판정은 `scoring` 이 값을 보고 낸다**
+- [x] `sql_agent/trace.py` — 단계별 소요·모델·온도·파싱 상태
+- [x] `run.py` — CLI
 
 ```bash
-python run.py "Which color of product has the highest total sales?" \
-  --gen-model openai:gpt-4.1 --eval-model openai:gpt-4.1 --basename baseline
+python run.py --list                              # 평가 질문과 정답
+python run.py --index 0 --condition feedback-t0   # 채점되는 실행
 ```
+
+> ⚠ **옵션 이름이 기획서와 다르다.** `--reflection` → `--condition`,
+> `--basename` → `--label`. 문서 본문이 이미 "조건"·"라벨" 로 부르고 있어 그쪽에 맞췄다.
+> `--index` · `--list` 는 기획에 없던 것으로, **채점되는 실행과 아닌 실행을 가르는** 장치다.
+
+### 4조건 실행 확인 (질문 0 · 관측 1회)
+
+| 조건 | 결과 |
+|---|---|
+| `none` | FAIL — 첫 행에 정답 키 없음 (blue) |
+| `text` | FAIL — 같음. 검토가 *"fully answers"* 라고 답했다 |
+| `feedback` | PASS |
+| **`feedback-t0`** | **PASS** — 온도를 `text` 와 같게 맞춰도 통과 |
 
 ## 5. 재현 검증 · 성공률 · 모델 비교 [A]
 
@@ -221,7 +239,15 @@ performance and **accuracy**."* 랩 §3.4 가 네 모델을 나열한다.
    **특히 랩과 같은 숫자가 나오는지부터**
 5. **단발 LLM 결과를 판정 근거로 쓰지 않는다.** 랩도 *"LLMs are stochastic"* 이라고 명시한다
 6. **평가 질문은 넣기 전에 실행해본다**
-7. SQL 실행은 항상 읽기 전용 연결
-8. 조용한 예외 삼킴 금지 — `execute_sql` 의 오류→DataFrame 은 되먹이는 것이므로
+7. **공개 이름은 기획서를 먼저 확인하고 짓는다.** 함수명 · CLI 옵션 · 반환 타입처럼
+   밖에서 부르는 이름은 기획서에 이미 적힌 것이 있다. 더 나은 이름이 떠올라도
+   **바꾸는 순간 그 자리에서 문서도 고치고, 왜 바꿨는지 남긴다**
+
+   > 3단계까지 세 번 어겼다 — `execute_sql`→`run_query`, `review_sql`→`refine_sql`,
+   > `--reflection`→`--condition`. 매번 코드를 먼저 쓰고 문서를 나중에 맞췄다.
+   > 문서가 조용히 코드를 따라가면 기획은 검증 기준이 아니라 사후 기록이 된다.
+
+8. SQL 실행은 항상 읽기 전용 연결
+9. 조용한 예외 삼킴 금지 — `execute_sql` 의 오류→DataFrame 은 되먹이는 것이므로
    플래그로 구분한다
-9. 단계 완료 시 체크박스를 갱신한다
+10. 단계 완료 시 체크박스를 갱신한다

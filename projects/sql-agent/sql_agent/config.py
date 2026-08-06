@@ -32,6 +32,13 @@ REPO_ROOT = PROJECT_ROOT.parents[1]
 # would be a missing key rather than a missing directory.
 REPO_ROOT_MARKER = "labs"
 
+# Every run gets its own directory, named for when it started, so repeated runs
+# never overwrite one another. Conditions and iterations nest under it because
+# a batch is dozens of runs and they have to stay apart to be compared.
+RUNS_DIR = PROJECT_ROOT / "runs"
+RUN_DIRECTORY_FORMAT = "%Y%m%d-%H%M%S"
+DEFAULT_RUN_LABEL = "run"
+
 # The lab uses one model for both halves and says so explicitly:
 # "openai:gpt-4.1 often gives the best results for self-reflection tasks".
 DEFAULT_GENERATION_MODEL = "openai:gpt-4.1"

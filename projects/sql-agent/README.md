@@ -221,32 +221,37 @@ SQL 문자열은 보지 않습니다 — `ABS(qty_delta)`와 `-qty_delta`는 같
 
 ---
 
-## 사용법 (예정)
+## 사용법
 
 ```bash
 source venv/bin/activate
 cd projects/sql-agent
 
-python run.py "Which color of product has the highest total sales?"
+python run.py --list                        # 평가 질문과 정답 보기
+python run.py --index 0                     # 평가 질문으로 실행 → 채점됨
+python run.py "How many brands are there?"  # 직접 입력 → 채점 안 됨
 
 # 조건별
-python run.py "..." --reflection none          # 검토 없음
-python run.py "..." --reflection text          # 3.2.1 — 텍스트만
-python run.py "..." --reflection feedback      # 3.2.2 — 실행 결과 포함 (기본)
-python run.py "..." --reflection feedback-t0   # 통제 조건
-
-# 단발이 아니라 성공률로
-python run.py "..." --repeat 10 --all-conditions
+python run.py --index 0 --condition none          # 검토 없음
+python run.py --index 0 --condition text          # 3.2.1 — 텍스트만
+python run.py --index 0 --condition feedback      # 3.2.2 — 실행 결과 포함 (기본)
+python run.py --index 0 --condition feedback-t0   # 통제 조건
 ```
 
 | 옵션 | 동작 |
 |---|---|
+| `--index N` | 평가 질문 N번으로 실행. **채점되려면 필요합니다** |
+| `--list` | 질문 6개와 정답 출력 |
+| `--condition` | `none` / `text` / `feedback` / `feedback-t0` |
 | `--gen-model` | V1 생성 모델 (기본 `openai:gpt-4.1`) |
 | `--eval-model` | 검토 모델 (기본 `openai:gpt-4.1`) |
-| `--reflection` | `none` / `text` / `feedback` / `feedback-t0` |
-| `--repeat` | 반복 횟수 (기본 10) |
-| `--basename` | 실행 라벨 |
-| `-v` | 프롬프트와 원문 출력 |
+| `--label` | 실행 폴더 이름에 붙습니다 |
+| `-v` | 모델이 받은 스키마도 출력 |
+
+**직접 입력한 질문은 채점되지 않습니다** — 정답을 모르기 때문입니다.
+채점된 실행이 오답이면 종료 코드 `1`을 냅니다 (테스트 러너와 같은 관례).
+
+> `--repeat` 와 조건 일괄 실행은 5단계에서 붙입니다.
 
 ---
 
