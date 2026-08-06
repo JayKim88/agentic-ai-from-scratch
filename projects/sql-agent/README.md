@@ -12,7 +12,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩
 | 랩 원본 | [labs/module-2/sql/](../../labs/module-2/sql/) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 1단계(데이터 계층) 완료.** 워크플로우는 아직 없습니다.
+> **구현 상태: 2단계(데이터·실행 계층) 완료.** LLM 호출은 아직 없습니다.
 >
 > ```bash
 > cd projects/sql-agent && python -m sql_agent.invariants
@@ -20,6 +20,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩
 >
 > 랩 생성기를 재현하고, 이 프로젝트가 측정 기준으로 삼는 값들을 고정합니다 —
 > **10컬럼 × 5,000행이 랩 생성기 출력과 완전히 일치**함을 확인했습니다.
+> 쿼리 실행도 랩 `execute_sql` 과 **7개 케이스에서 출력이 동일**합니다.
 
 ---
 
