@@ -9,7 +9,7 @@
 | 0. 준비 | — | 🔄 |
 | 1. 데이터 계층 (SQLite) | A | ✅ |
 | 2. 실행 계층 (쿼리 실행) | A | ✅ |
-| 3. LLM 계층 (프롬프트 3개) | A | ⬜ |
+| 3. LLM 계층 (프롬프트 3개) | A | ✅ |
 | 4. 워크플로우와 판정기 | A | ⬜ |
 | 5. 재현 검증 · 성공률 · 모델 비교 | A | ⬜ |
 | 6. 확장 (B1·B2) | B | ⬜ |
@@ -98,18 +98,39 @@ python -m sql_agent.invariants
 
 ## 3. LLM 계층 [A]
 
-- [ ] `config.py` — 모델 기본값(`openai:gpt-4.1`), 키 검증
-- [ ] `llm.py` — aisuite 텍스트 호출. **temperature 를 인자로 받는다** (조건 4에 필요)
-- [ ] `sqlgen.py` — 프롬프트 3개를 **축자로**
-  - [ ] `generate_sql` — `temperature=0`, **4칸 들여쓰기 포함**
-  - [ ] `refine_sql` — `temperature=0`, **들여쓰기 없음**
-  - [ ] `refine_sql_external_feedback` — `df.to_markdown(index=False)`, `temperature=1.0`
-  - [ ] JSON 파싱 + 폴백. **파싱 실패 사실은 따로 기록** (feedback 에 섞지 않는다)
-- [ ] **프롬프트 축자 비교 테스트** ← 완료 기준 3
-  - [ ] [`M2_UGL_2.md`](../../labs/module-2/sql/M2_UGL_2.md) 원문과 비교. 공백·들여쓰기까지
-  - [ ] ⚠ **f-string 을 렌더한 뒤 비교**한다. `refine_sql` 소스의 `{{` / `}}` 는
-        이스케이프이고 모델에게는 `{` / `}` 로 간다
-  - [x] 기획 시점에 3개 모두 축자 일치 확인함 ([PLAN §5](PLAN.md))
+- [x] `sql_agent/config.py` — 모델 기본값(`openai:gpt-4.1`), 키 검증, **온도 상수**
+  - [x] 랩 값 그대로: 생성 0 · 텍스트 검토 0 · 외부 피드백 1.0
+  - [x] `CONTROLLED_FEEDBACK_TEMPERATURE` — 통제 조건용 ([PLAN §5.4](PLAN.md))
+- [x] `sql_agent/llm.py` — aisuite 텍스트 호출.
+      **`temperature` 를 기본값 없는 필수 인자로** — 조건을 가르는 값이라 암묵적으로 두면
+      비교가 아무도 안 본 기본값에 의존하게 된다
+- [x] `sql_agent/sqlgen.py` — 프롬프트 3개를 **축자로**
+  - [x] `generate_sql` · `refine_sql` · `refine_sql_external_feedback` — 랩과 같은 이름
+  - [x] **앞 개행과 뒤 들여쓰기까지 포함**해 재현. 그것도 모델에게 간다
+  - [x] `refine_sql` 만 들여쓰기가 없는 것도 그대로
+  - [x] JSON 파싱 + 랩과 같은 폴백. **`is_json_parsed` 로 실패를 따로 기록** —
+        폴백은 "문제없다는 검토" 와 똑같이 생겼다
+- [x] **프롬프트 축자 비교 테스트** ← 완료 기준 3 · `check_prompts()`
+  - [x] 노트북에서 f-string 원문을 추출해 **렌더한 뒤** 대조. 3개 모두 일치
+  - [x] 검사가 실제로 차이를 잡는지 확인 — 한 글자 · 앞 개행 · 뒤 공백 ·
+        en-dash · 대소문자 · 들여쓰기 전부 검출
+
+```bash
+python -m sql_agent.sqlgen
+```
+
+### 배관 확인 — 실제 호출 1회
+
+- [x] 랩의 질문으로 4단계를 손으로 이어봤다. **랩의 서술이 그대로 재현된다**
+
+| 단계 | 결과 |
+|---|---|
+| `generate_sql` | `SUM(qty_delta * unit_price)` + `WHERE action='sale'` — 우리가 역산한 형태와 동일 |
+| 실행 | **blue / −190,571** ← 랩 문서의 값 |
+| `refine_sql` (텍스트만) | *"It fully answers the user's question"* → SQL 그대로 → ❌ |
+| `refine_sql_external_feedback` | 부호 문제 지적 → `ABS(qty_delta)` → **white / 358,315** ✅ |
+
+> 단발 관측이다. 수치는 5단계에서 N=10 으로 낸다.
 
 ## 4. 워크플로우와 판정기 [A]
 

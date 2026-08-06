@@ -12,15 +12,22 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩
 | 랩 원본 | [labs/module-2/sql/](../../labs/module-2/sql/) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 2단계(데이터·실행 계층) 완료.** LLM 호출은 아직 없습니다.
+> **구현 상태: 3단계(데이터 · 실행 · LLM 계층) 완료.**
+> 워크플로우와 채점기는 아직 없습니다.
 >
 > ```bash
-> cd projects/sql-agent && python -m sql_agent.invariants
+> cd projects/sql-agent
+> python -m sql_agent.invariants   # 데이터가 랩과 같은지
+> python -m sql_agent.sqlgen       # 프롬프트가 랩과 같은지
 > ```
 >
-> 랩 생성기를 재현하고, 이 프로젝트가 측정 기준으로 삼는 값들을 고정합니다 —
-> **10컬럼 × 5,000행이 랩 생성기 출력과 완전히 일치**함을 확인했습니다.
-> 쿼리 실행도 랩 `execute_sql` 과 **7개 케이스에서 출력이 동일**합니다.
+> 랩과 같은 것을 만들고 있는지 세 층에서 확인합니다.
+>
+> | 층 | 확인 |
+> |---|---|
+> | 데이터 | 10컬럼 × 5,000행이 랩 생성기 출력과 완전히 일치 |
+> | 실행 | 랩 `execute_sql` 과 7개 케이스에서 출력 동일 |
+> | 프롬프트 | 3개 모두 **앞 개행·뒤 들여쓰기까지** 랩과 일치 |
 
 ---
 
@@ -203,11 +210,14 @@ SQL 문자열은 보지 않습니다 — `ABS(qty_delta)`와 `-qty_delta`는 같
 
 ## 코드 재사용
 
-`config.py` · `llm.py` · `trace.py` · `report.py` 와 `runs/` 폴더 규약은 기존
-프로젝트에서 **복사해 씁니다.** 지금 공통 모듈로 뽑으면 추측이 되므로,
-동작하는 것을 만든 뒤 실제로 무엇이 같았는지 보고 결정합니다.
+기존 프로젝트에 같은 역할의 모듈이 있어 **가져다 고쳐 씁니다.** 지금 공통 모듈로
+뽑으면 추측이 되므로, 동작하는 것을 만든 뒤 실제로 무엇이 같았는지 보고 결정합니다.
 
-`executor.py` 는 여기서 새로 씁니다 — SQL 실행이라 성격이 다릅니다.
+| 모듈 | 상태 |
+|---|---|
+| `config.py` · `llm.py` | ✅ 가져와 이 랩에 맞게 고침 — 온도 상수 추가, 이미지 경로 제거 |
+| `trace.py` · `report.py` · `runs/` 규약 | 4단계에서 |
+| `dataset.py` · `executor.py` · `sqlgen.py` | 여기서 새로 씀 — SQL 이라 성격이 다릅니다 |
 
 ---
 
