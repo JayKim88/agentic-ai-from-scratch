@@ -12,13 +12,14 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩
 | 랩 원본 | [labs/module-2/sql/](../../labs/module-2/sql/) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
 
-> **구현 상태: 3단계(데이터 · 실행 · LLM 계층) 완료.**
-> 워크플로우와 채점기는 아직 없습니다.
+> **구현 상태: A단계(랩 재현) 완료.** 측정 결과는 맨 아래에 있습니다.
+> 남은 것은 B단계 — 질문 6개짜리 정답 데이터셋입니다.
 >
 > ```bash
 > cd projects/sql-agent
-> python -m sql_agent.invariants   # 데이터가 랩과 같은지
-> python -m sql_agent.sqlgen       # 프롬프트가 랩과 같은지
+> python -m sql_agent.invariants           # 데이터가 랩과 같은지
+> python -m sql_agent.sqlgen               # 프롬프트가 랩과 같은지
+> python run.py --index 0 --all-conditions # 조건별 성공률
 > ```
 >
 > 랩과 같은 것을 만들고 있는지 세 층에서 확인합니다.
@@ -147,7 +148,8 @@ SQL 문자열은 보지 않습니다 — `ABS(qty_delta)`와 `-qty_delta`는 같
 > *"Because LLMs are **stochastic**, every run may return slightly different results."*
 
 단발 결과로는 실패했을 때 **우리 구현이 틀린 건지 모델이 흔들린 건지** 구분할 수
-없습니다. 각 조건을 N=10회 돌려 성공률을 냅니다.
+없습니다. 각 조건을 여러 번 돌려 성공률을 냅니다 — 넷 중 셋이 `temperature=0`이라
+거의 결정적이므로 **반복은 실제로 흔들리는 조건에 몰아줍니다** (temp 0은 5회, 1.0은 10회).
 
 ### 3. 변인을 분리한 조건을 하나 더 둡니다
 
@@ -251,15 +253,64 @@ python run.py --index 0 --condition feedback-t0   # 통제 조건
 **직접 입력한 질문은 채점되지 않습니다** — 정답을 모르기 때문입니다.
 채점된 실행이 오답이면 종료 코드 `1`을 냅니다 (테스트 러너와 같은 관례).
 
-> `--repeat` 와 조건 일괄 실행은 5단계에서 붙입니다.
+```bash
+# 반복 실행 — 조건별 성공률
+python run.py --index 0 --all-conditions
+
+# 같은 V1 을 네 모델에 검토시키기
+python run.py --index 0 --compare-models
+```
+
+| 옵션 | 동작 |
+|---|---|
+| `--all-conditions` | 조건 4개를 각각 반복 실행하고 성공률 표를 냅니다 |
+| `--compare-models` | V1 하나를 고정해 네 모델에 검토시킵니다 |
+
+둘 다 `--index`가 필요합니다 — 채점할 정답이 있어야 성공률이 나옵니다.
 
 ---
 
 ## 실행 결과
 
-> 구현 후 채웁니다.
+질문 0 *"Which color of product has the highest total sales?"* · 2026-08-06
 
-- [ ] V1 SQL과 그 음수 결과
-- [ ] 조건 4개 성공률 (N=10) — 특히 `text` vs `feedback-t0`
-- [ ] 모델 4종 × 조건별 정확도
-- [ ] 정답 데이터셋 정확도 (B1)
+### 조건별 성공률
+
+```
+none          0/5     0%  .....
+text          0/5     0%  .....
+feedback     10/10  100%  ##########
+feedback-t0   5/5   100%  #####
+```
+
+**`feedback-t0`가 이 표의 결론입니다.** 온도를 `text`와 같은 0으로 맞추고도 5/5이므로,
+**차이는 온도가 아니라 실행 결과에서 옵니다.** 랩의 구성만으로는 할 수 없던 말입니다.
+
+temp 0인 세 조건은 모두 만장일치였습니다.
+
+### 모델별 — 같은 V1, 같은 실행 결과
+
+| 모델 | 랩 방식 | 펜스 제거 시 | 실패 원인 |
+|---|---|---|---|
+| `gpt-4.1` | 3/3 | 3/3 | — |
+| `gpt-4o` | 0/3 | **3/3** | ` ```json ` 펜스 |
+| `gpt-4.1-mini` | 0/3 | **3/3** | ` ```json ` 펜스 |
+| `gpt-3.5-turbo` | 0/3 | 0/3 | 실제로 못 고침 |
+
+⚠ **왼쪽 열은 반성 능력이 아닙니다.** `gpt-4o`는 부호 문제를 정확히 짚고
+`SUM(ABS(qty_delta) * unit_price)`를 냈지만, 응답을 ` ```json `으로 감싸 파싱이 실패했고
+랩의 폴백이 원본 SQL을 유지했습니다.
+
+**랩은 SQL의 펜스는 벗기지만 검토 응답의 펜스는 벗기지 않습니다.** 한쪽만 처리합니다.
+그래서 *"gpt-4.1이 self-reflection에 가장 좋다"*는 랩의 주장은 우리 데이터로 지지되지만,
+**측정된 것의 상당 부분이 JSON 형식 준수**입니다.
+
+`_parse_review`는 고치지 않았습니다 — 랩 재현이 A단계의 목적입니다. 대신
+`rescore_without_fences()`가 저장된 원문으로 재채점해 두 숫자를 함께 냅니다.
+
+실제로 못 고친 건 `gpt-3.5-turbo` 하나인데, 이것도 *"−190571 for blue seems incorrect"*라고
+**지적은 하고 SQL은 그대로 뒀습니다** — 진단은 했으나 처방을 못 한 경우입니다.
+
+### 아직 안 한 것
+
+- [ ] 정답 데이터셋 정확도 (B1) — 질문 6개 × 조건

@@ -1,0 +1,15 @@
+{
+  "question": "Which color of product has the highest total sales? Consider sale events only.",
+  "condition": "feedback",
+  "sql_v1": "```sql\nSELECT color, SUM(qty_delta * unit_price) AS total_sales\nFROM transactions\nWHERE action = 'sale'\nGROUP BY color\nORDER BY total_sales DESC\nLIMIT 1;\n```",
+  "result_v1": "| color   |   total_sales |\n|:--------|--------------:|\n| blue    |       -190571 |",
+  "v1_has_error": false,
+  "feedback": "```json\n{\n    \"feedback\": \"The original SQL finds the color of product with the highest total sales calculated by multiplying quantity change (qty_delta) by unit price for sale events. However, the negative total_sales value suggests qty_delta may represent returns or decreases in stock. It's essential to ensure that qty_delta reflects sales accurately, typically as a positive number, or use absolute value. Assuming qty_delta should be positive for sales, let's refine the query.\",\n    \"refined_sql\": \"SELECT color, SUM(ABS(qty_delta) * unit_price) AS total_sales FROM transactions WHERE action = 'sale' GROUP BY color ORDER BY total_sales DESC LIMIT 1;\"\n}\n```",
+  "is_json_parsed": false,
+  "sql_v2": "```sql\nSELECT color, SUM(qty_delta * unit_price) AS total_sales\nFROM transactions\nWHERE action = 'sale'\nGROUP BY color\nORDER BY total_sales DESC\nLIMIT 1;\n```",
+  "result_v2": "| color   |   total_sales |\n|:--------|--------------:|\n| blue    |       -190571 |",
+  "v2_has_error": false,
+  "is_correct": false,
+  "score_reason": "expected key not in the first row",
+  "value_delta": null
+}

@@ -1,0 +1,246 @@
+{
+  "question": "Which color of product has the highest total sales? Consider sale events only.",
+  "note": "repeats differ by condition: the temperature-0 ones are close to deterministic, so the calls go to the one that varies",
+  "tallies": [
+    {
+      "label": "none",
+      "detail": "baseline — the first query is the answer",
+      "passed": 0,
+      "total": 5,
+      "rate": 0.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": null,
+          "is_json_parsed": null
+        },
+        {
+          "iteration": 2,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": null,
+          "is_json_parsed": null
+        },
+        {
+          "iteration": 3,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": null,
+          "is_json_parsed": null
+        },
+        {
+          "iteration": 4,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": null,
+          "is_json_parsed": null
+        },
+        {
+          "iteration": 5,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": null,
+          "is_json_parsed": null
+        }
+      ]
+    },
+    {
+      "label": "text",
+      "detail": "the lab's 3.2.1 — review the SQL text",
+      "passed": 0,
+      "total": 5,
+      "rate": 0.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 2,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 3,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 4,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 5,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        }
+      ]
+    },
+    {
+      "label": "feedback",
+      "detail": "the lab's 3.2.2 — review the SQL and its result",
+      "passed": 10,
+      "total": 10,
+      "rate": 1.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 2,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 3,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 4,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 5,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 6,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 7,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 8,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 9,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 10,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        }
+      ]
+    },
+    {
+      "label": "feedback-t0",
+      "detail": "as above at the text review's temperature, isolating the feedback",
+      "passed": 5,
+      "total": 5,
+      "rate": 1.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 2,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 3,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 4,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 5,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "question": "Which color of product has the highest total sales? Consider sale events only.",
+  "condition": "text",
+  "generation_model": "openai:gpt-4.1",
+  "evaluation_model": "openai:gpt-4.1",
+  "started_at": "2026-08-06T14:30:30.115689+00:00",
+  "steps": [
+    {
+      "name": "schema",
+      "model": null,
+      "duration_seconds": 0.0,
+      "detail": {}
+    },
+    {
+      "name": "generate_v1",
+      "model": "openai:gpt-4.1",
+      "duration_seconds": 1.04,
+      "detail": {
+        "sql": "```sql\nSELECT color, SUM(qty_delta * unit_price) AS total_sales\nFROM transactions\nWHERE action = 'sale'\nGROUP BY color\nORDER BY total_sales DESC\nLIMIT 1;\n```",
+        "reused": false
+      }
+    },
+    {
+      "name": "execute_v1",
+      "model": null,
+      "duration_seconds": 0.0,
+      "detail": {
+        "has_error": false,
+        "rows": 1
+      }
+    },
+    {
+      "name": "review",
+      "model": "openai:gpt-4.1",
+      "duration_seconds": 1.19,
+      "detail": {
+        "temperature": 0.0,
+        "sees_execution_output": false,
+        "is_json_parsed": true,
+        "changed_sql": true
+      }
+    },
+    {
+      "name": "execute_v2",
+      "model": null,
+      "duration_seconds": 0.0,
+      "detail": {
+        "has_error": false,
+        "rows": 1
+      }
+    },
+    {
+      "name": "score",
+      "model": null,
+      "duration_seconds": 0.0,
+      "detail": {
+        "is_correct": false,
+        "reason": "expected key not in the first row",
+        "value_delta": null
+      }
+    }
+  ]
+}

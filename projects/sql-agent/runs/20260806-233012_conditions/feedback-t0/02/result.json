@@ -1,0 +1,15 @@
+{
+  "question": "Which color of product has the highest total sales? Consider sale events only.",
+  "condition": "feedback-t0",
+  "sql_v1": "```sql\nSELECT color, SUM(qty_delta * unit_price) AS total_sales\nFROM transactions\nWHERE action = 'sale'\nGROUP BY color\nORDER BY total_sales DESC\nLIMIT 1;\n```",
+  "result_v1": "| color   |   total_sales |\n|:--------|--------------:|\n| blue    |       -190571 |",
+  "v1_has_error": false,
+  "feedback": "The SQL correctly calculates total sales per color for sale events, but the negative total_sales value suggests qty_delta may be negative for sales. Typically, sales should have positive revenue. If qty_delta is negative for sales (e.g., -1 for each item sold), multiplying by unit_price gives negative sales. To fix this, use ABS(qty_delta) or -qty_delta to ensure total_sales is positive.",
+  "is_json_parsed": true,
+  "sql_v2": "SELECT color, SUM(ABS(qty_delta) * unit_price) AS total_sales\nFROM transactions\nWHERE action = 'sale'\nGROUP BY color\nORDER BY total_sales DESC\nLIMIT 1;",
+  "result_v2": "| color   |   total_sales |\n|:--------|--------------:|\n| white   |        358315 |",
+  "v2_has_error": false,
+  "is_correct": true,
+  "score_reason": "first row carries the expected answer",
+  "value_delta": 0.0
+}

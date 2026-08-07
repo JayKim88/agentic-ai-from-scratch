@@ -3,6 +3,8 @@
     python run.py "Which color of product has the highest total sales?"
     python run.py "..." --condition text
     python run.py --index 1 --condition feedback-t0
+    python run.py --index 0 --all-conditions      # repeat each condition, count passes
+    python run.py --index 0 --compare-models      # same query, four reviewers
 
 A question can be typed out or picked from the evaluation set by index. Picking
 one is what makes scoring possible: a typed question has no known answer, so
@@ -18,7 +20,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from sql_agent import config, report
+from sql_agent import batch, config, report
 from sql_agent.invariants import EXPECTATIONS
 from sql_agent.trace import RunTrace
 from sql_agent.workflow import CONDITIONS, DEFAULT_CONDITION, run_sql_workflow
@@ -48,6 +50,14 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--condition", default=DEFAULT_CONDITION, choices=list(CONDITIONS),
         help=f"how to review the first query (default: {DEFAULT_CONDITION})",
+    )
+    parser.add_argument(
+        "--all-conditions", action="store_true",
+        help="repeat every condition and report pass rates (needs --index)",
+    )
+    parser.add_argument(
+        "--compare-models", action="store_true",
+        help="hand one fixed query to each model to review (needs --index)",
     )
     parser.add_argument("--gen-model", default=config.DEFAULT_GENERATION_MODEL)
     parser.add_argument("--eval-model", default=config.DEFAULT_EVALUATION_MODEL)
@@ -88,6 +98,59 @@ def _resolve_question(args) -> tuple[str, object | None]:
     raise SystemExit("give a question, or --index N to pick one that can be scored.")
 
 
+def _show_progress(label: str, iteration: int, outcome) -> None:
+    mark = "pass" if outcome.is_correct else "FAIL"
+    print(f"  {label:<22} {iteration:>2}  {mark}")
+
+
+def _run_batch(args, expectation) -> int:
+    """Repeat runs and print the counts. Returns the process exit code."""
+    if expectation is None:
+        raise SystemExit("--all-conditions and --compare-models need --index N to score against.")
+
+    directory = report.new_run_directory(args.label)
+    print(f"{expectation.question}\nSaving to {directory.relative_to(config.PROJECT_ROOT)}\n")
+
+    if args.all_conditions:
+        tallies = batch.run_conditions(
+            expectation, directory,
+            generation_model=args.gen_model, evaluation_model=args.eval_model,
+            on_progress=_show_progress,
+        )
+        note = ("repeats differ by condition: the temperature-0 ones are close to "
+                "deterministic, so the calls go to the one that varies")
+        print("\n" + batch.format_table(tallies, "Pass rate by condition"))
+        print(f"\n  {note}")
+        batch.save_summary(expectation.question, tallies, directory, note)
+
+    if args.compare_models:
+        fixed_sql, tallies, baseline = batch.run_model_comparison(
+            expectation, directory,
+            generation_model=args.gen_model, on_progress=_show_progress,
+        )
+        note = "every model reviewed the same V1 and the same execution output"
+        print("\n" + batch.format_table(tallies, "Pass rate by reviewing model"))
+        print(f"\n  {note}\n")
+        print("  V1 every reviewer saw:")
+        print("\n".join(f"    {line}" for line in fixed_sql.splitlines()))
+        print("\n  and its output:")
+        print("\n".join(f"    {line}" for line in baseline.to_markdown().splitlines()))
+        batch.save_summary(
+            expectation.question, tallies, directory, note, name="summary_models.json"
+        )
+
+        rescored = batch.rescore_without_fences(directory, expectation)
+        if any(before != after for before, after in rescored.values()):
+            print("\n  Scored again with the markdown fence removed — no model was called.")
+            print("  The lab strips a fence off generated SQL but not off a review, so a")
+            print("  correct answer that arrived fenced counts as a failure above.\n")
+            for label, (before, after) in rescored.items():
+                mark = "   <- fence, not reasoning" if before != after else ""
+                print(f"    {label.removeprefix('model_'):<16} {before} -> {after}{mark}")
+
+    return 0
+
+
 # --- main export ---
 
 
@@ -99,6 +162,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     question, expectation = _resolve_question(args)
+
+    if args.all_conditions or args.compare_models:
+        return _run_batch(args, expectation)
+
     trace = RunTrace(question, args.condition, args.gen_model, args.eval_model)
 
     result = run_sql_workflow(

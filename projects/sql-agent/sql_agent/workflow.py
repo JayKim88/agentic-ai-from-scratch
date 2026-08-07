@@ -139,8 +139,14 @@ def run_sql_workflow(
     evaluation_model: str = config.DEFAULT_EVALUATION_MODEL,
     expectation: Expectation | None = None,
     trace: RunTrace | None = None,
+    sql_v1: str | None = None,
 ) -> WorkflowResult:
     """Answer `question` under `condition`, scoring the result if an answer is known.
+
+    Pass `sql_v1` to skip generation and review a query that is already written.
+    Comparing reviewers needs that: generated queries differ between models, so
+    without a fixed one a weaker score could mean the reviewer missed the flaw
+    or that it was handed a different flaw to begin with.
 
     Verifies prompt fidelity before the first model call. A batch is hundreds of
     calls and the prompts are what every difference is attributed to, so finding
@@ -155,9 +161,11 @@ def run_sql_workflow(
     with trace.timed("schema"):
         schema = get_schema(db_path)
 
-    with trace.timed("generate_v1", generation_model) as step:
-        sql_v1 = sqlgen.generate_sql(question, schema, model=generation_model)
-        step.detail = {"sql": sql_v1}
+    is_v1_supplied = sql_v1 is not None
+    with trace.timed("generate_v1", None if is_v1_supplied else generation_model) as step:
+        if not is_v1_supplied:
+            sql_v1 = sqlgen.generate_sql(question, schema, model=generation_model)
+        step.detail = {"sql": sql_v1, "reused": is_v1_supplied}
 
     with trace.timed("execute_v1") as step:
         result_v1 = run_query(sql_v1, db_path)

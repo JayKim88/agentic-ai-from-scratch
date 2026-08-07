@@ -1,0 +1,142 @@
+{
+  "question": "Which color of product has the highest total sales? Consider sale events only.",
+  "note": "every model reviewed the same V1 and the same execution output",
+  "tallies": [
+    {
+      "label": "openai:gpt-4.1",
+      "detail": "reviewing a fixed V1 (feedback)",
+      "passed": 3,
+      "total": 3,
+      "rate": 1.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 2,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 3,
+          "is_correct": true,
+          "reason": "first row carries the expected answer",
+          "value_delta": 0.0,
+          "changed_sql": true,
+          "is_json_parsed": true
+        }
+      ]
+    },
+    {
+      "label": "openai:gpt-4o",
+      "detail": "reviewing a fixed V1 (feedback)",
+      "passed": 0,
+      "total": 3,
+      "rate": 0.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        },
+        {
+          "iteration": 2,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        },
+        {
+          "iteration": 3,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        }
+      ]
+    },
+    {
+      "label": "openai:gpt-4.1-mini",
+      "detail": "reviewing a fixed V1 (feedback)",
+      "passed": 0,
+      "total": 3,
+      "rate": 0.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        },
+        {
+          "iteration": 2,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        },
+        {
+          "iteration": 3,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": false,
+          "is_json_parsed": false
+        }
+      ]
+    },
+    {
+      "label": "openai:gpt-3.5-turbo",
+      "detail": "reviewing a fixed V1 (feedback)",
+      "passed": 0,
+      "total": 3,
+      "rate": 0.0,
+      "unanimous": true,
+      "outcomes": [
+        {
+          "iteration": 1,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 2,
+          "is_correct": false,
+          "reason": "expected key not in the first row",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        },
+        {
+          "iteration": 3,
+          "is_correct": false,
+          "reason": "query returned no rows",
+          "value_delta": null,
+          "changed_sql": true,
+          "is_json_parsed": true
+        }
+      ]
+    }
+  ]
+}
