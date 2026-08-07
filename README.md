@@ -36,7 +36,7 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 |---|---|---|
 | 1 | [에이전틱 워크플로우 입문](notes/module-1-agentic-workflows/README.md) | ✅ 레슨 7개 완료 |
 | 2 | [리플렉션 디자인 패턴](notes/module-2-reflection/README.md) | ✅ 레슨 7개 완료 · 랩 2개 자체 구현 (실행 환경은 🔒 Pro 전용) |
-| 3 | Tool Use | 예정 |
+| 3 | [도구 사용](notes/module-3-tool-use/README.md) | ✅ 레슨 5개 완료 · 랩 2개는 자료 대기 |
 | 4 | Practical Tips (evals) | 예정 |
 | 5 | Planning & Multi-Agent | 예정 |
 
@@ -186,6 +186,8 @@ agentic-ai/
 │   │   ├── 01~07-*.md      # 레슨별 정리
 │   │   └── images/         # 강의 슬라이드 캡처 (PNG)
 │   ├── module-2-reflection/
+│   │   └── (동일 구조)
+│   ├── module-3-tool-use/
 │   │   └── (동일 구조)
 │   └── retrospectives/     # 자체 구현 vs 공식 구현 비교
 ├── projects/               # 직접 구현한 프로젝트
