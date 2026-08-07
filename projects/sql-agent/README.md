@@ -11,6 +11,7 @@ DeepLearning.AI *Agentic AI* 모듈 2 ungraded 랩
 | 작업 현황 | [CHECKLIST.md](CHECKLIST.md) |
 | 랩 원본 | [labs/module-2/sql/](../../labs/module-2/sql/) |
 | 강의 개념 | [모듈 2 학습 노트](../../notes/module-2-reflection/README.md) |
+| 해보고 알게 된 것 | [회고](../../notes/retrospectives/sql-agent.md) |
 
 > **구현 상태: A단계(랩 재현) 완료.** 측정 결과는 맨 아래에 있습니다.
 > 남은 것은 B단계 — 질문 6개짜리 정답 데이터셋입니다.
@@ -314,3 +315,5 @@ temp 0인 세 조건은 모두 만장일치였습니다.
 ### 아직 안 한 것
 
 - [ ] 정답 데이터셋 정확도 (B1) — 질문 6개 × 조건
+
+> 이 결과가 어떻게 나왔고 무엇이 어긋났는지는 [회고](../../notes/retrospectives/sql-agent.md)에 있습니다.

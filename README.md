@@ -35,7 +35,7 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 | 모듈 | 정리 | 상태 |
 |---|---|---|
 | 1 | [에이전틱 워크플로우 입문](notes/module-1-agentic-workflows/README.md) | ✅ 레슨 7개 완료 |
-| 2 | [리플렉션 디자인 패턴](notes/module-2-reflection/README.md) | ✅ 레슨 7개 완료 (랩 2개는 🔒 Pro 전용) |
+| 2 | [리플렉션 디자인 패턴](notes/module-2-reflection/README.md) | ✅ 레슨 7개 완료 · 랩 2개 자체 구현 (실행 환경은 🔒 Pro 전용) |
 | 3 | Tool Use | 예정 |
 | 4 | Practical Tips (evals) | 예정 |
 | 5 | Planning & Multi-Agent | 예정 |
@@ -52,14 +52,18 @@ ungraded 코드 예제를 로컬에서 실행하기 위한 작업 공간.
 |---|---|---|---|
 | [research-agent](projects/research-agent/README.md) | 모듈 1 "Try the research agent" | **강의 영상만** | ✅ 완료 — 자체 평가 8/8 |
 | [chart-agent](projects/chart-agent/README.md) | 모듈 2 "Chart Generation" | **랩 자료 확보** | 🔨 6/7 — 랩 재현·대조 완료, 확장 남음 |
+| [sql-agent](projects/sql-agent/README.md) | 모듈 2 "Improving SQL Generation with Reflection" | **랩 자료 확보** | 🔨 A단계 완료 — 조건별 성공률·모델 비교까지, B 남음 |
 
-두 프로젝트의 성격이 다르다. 모듈 1은 랩을 못 봐서 **백지에서 설계**했고,
+출발점이 다르다. 모듈 1은 랩을 못 봐서 **백지에서 설계**했고,
 모듈 2는 랩 자료(`labs/module-2/`)를 얻어 **명세가 있는 재현**이다.
+재현이라 대조할 기준이 생겼고, 그래서 "랩과 같은가"를 코드가 확인한다 —
+데이터는 전 행 비교, 실행은 출력 비교, 프롬프트는 축자 비교.
 
 | 회고 | 내용 |
 |---|---|
 | [자체 구현 vs 공식 저장소](notes/retrospectives/research-agent-vs-official.md) | 모듈 1 — 완성 후 공식 저장소와 대조 |
 | [차트 에이전트 랩 대조](notes/retrospectives/chart-agent-lab-findings.md) | 모듈 2 — 진행 중. 반성이 차트를 퇴행시킨 실물 사례 |
+| [SQL 에이전트](notes/retrospectives/sql-agent.md) | 모듈 2 — 검토에 실행 결과를 주면 0/5 → 10/10. 모델 비교가 실은 JSON 형식을 재고 있던 건 |
 
 프레임워크(LangChain / CrewAI) 없이 도구 호출 루프까지 직접 구현했다.
 
@@ -186,9 +190,12 @@ agentic-ai/
 │   └── retrospectives/     # 자체 구현 vs 공식 구현 비교
 ├── projects/               # 직접 구현한 프로젝트
 │   ├── research-agent/     # 모듈 1 리서치 에이전트
-│   └── chart-agent/        # 모듈 2 차트 에이전트
+│   ├── chart-agent/        # 모듈 2 차트 에이전트
+│   └── sql-agent/          # 모듈 2 SQL 에이전트
 └── labs/                   # 강의 자료 원본 (수정 금지)
-    └── module-2/           # 노트북 HTML · coffee_sales.csv · 차트 2장
+    └── module-2/           # 랩이 둘이라 랩별로 나눠 둔다
+        ├── chart/          # M2_UGL_1.html · coffee_sales.csv · 차트 2장
+        └── sql/            # M2_UGL_2.md · utils.py
 ```
 
 | 디렉터리 | 역할 |
